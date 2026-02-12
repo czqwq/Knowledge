@@ -16,8 +16,12 @@
 | **NewHorizonsCoreMod** | [Useful_Readme.md](./Useful_Readme.md#newhorizonscoremod-可重用代码) | 5 | ✅ 已完成 |
 | **GTNHLib** | [Useful_Readme.md](./Useful_Readme.md#gtnhlib-可重用代码库) | 81 | ✅ 已完成 |
 | **Applied-Energistics-2-Unofficial** | [AE_README.md](./AE_README.md) | 286 | ✅ 已完成 |
+| **Angelica** | [Core_Infrastructure_README.md](./Core_Infrastructure_README.md#angelica---渲染引擎) | 143 | ✅ 已完成 |
+| **UniMixins** | [Core_Infrastructure_README.md](./Core_Infrastructure_README.md#unimixins---mixin加载器) | 9 | ✅ 已完成 |
+| **StructureLib** | [Core_Infrastructure_README.md](./Core_Infrastructure_README.md#structurelib---结构验证库) | 26 | ✅ 已完成 |
+| **Hodgepodge** | [Core_Infrastructure_README.md](./Core_Infrastructure_README.md#hodgepodge---修复集合) | 20 | ✅ 已完成 |
 
-**总计**: 600+ 核心接口已文档化
+**总计**: 798个核心接口已文档化
 
 ### 第三方模组（已完成文档）
 
@@ -38,12 +42,14 @@
 
 ### Tier 1 - 核心基础设施
 
-| 仓库名 | 描述 | 优先级 | 预计接口数 |
-|--------|------|--------|-----------|
-| GT-New-Horizons-Modpack | 主整合包配置 | 🔴 高 | ~10 |
-| Angelica | OptiFine替代（渲染优化） | 🔴 高 | ~50 |
-| ModularUI2 | GUI库 | 🔴 高 | ~40 |
-| StructureLib | 结构验证库 | 🔴 高 | ~30 |
+| 仓库名 | 描述 | 优先级 | 接口数 | 状态 |
+|--------|------|--------|---------|------|
+| GT-New-Horizons-Modpack | 主整合包配置 | 🔴 高 | ~10 | ⏳ 待分析 |
+| ~~Angelica~~ | ~~OptiFine替代（渲染优化）~~ | ~~🔴 高~~ | 143 | ✅ **已完成** |
+| ModularUI2 | GUI库 | 🔴 高 | ~40 | ⏳ 待分析 |
+| ~~StructureLib~~ | ~~结构验证库~~ | ~~🔴 高~~ | 26 | ✅ **已完成** |
+| ~~UniMixins~~ | ~~Mixin加载器框架~~ | ~~🔴 高~~ | 9 | ✅ **已完成** |
+| ~~Hodgepodge~~ | ~~Bug修复/性能优化~~ | ~~🔴 高~~ | 20 | ✅ **已完成** |
 
 ### Tier 2 - 主要模组
 
