@@ -1268,3 +1268,531 @@ GT5-Unofficial提供了完整的模组开发框架，包括：
 - GT5U Wiki: https://gtnh.miraheze.org/
 - Javadoc: (需要本地生成)
 
+
+---
+
+# NewHorizonsCoreMod 可重用代码
+
+**仓库地址**: https://github.com/GTNewHorizons/NewHorizonsCoreMod  
+**项目定位**: GTNH整合包核心模组，提供配方集成、Mod修复、脚本系统
+
+## 接口列表
+
+### IScriptLoader - 脚本加载接口
+**位置**: `com.dreammaster.scripts.IScriptLoader`  
+**用途**: 统一的配方脚本加载框架
+
+```java
+public interface IScriptLoader {
+    String getScriptName();
+    List<String> getDependencies();
+    void loadRecipes();
+    void addShapedRecipe(ItemStack result, Object... recipe);
+    void addShapelessRecipe(ItemStack result, Object... recipe);
+}
+```
+
+**使用示例**:
+```java
+public class GregTechScript implements IScriptLoader {
+    @Override
+    public String getScriptName() {
+        return "GregTech";
+    }
+    
+    @Override
+    public List<String> getDependencies() {
+        return Arrays.asList("IC2", "Forestry");
+    }
+    
+    @Override
+    public void loadRecipes() {
+        addShapedRecipe(
+            GTOreDictUnificator.get(OrePrefixes.plate, Materials.Iron, 1),
+            "XXX", "XHX", "XXX",
+            'X', "ingotIron",
+            'H', ToolDictNames.craftingToolForgeHammer
+        );
+    }
+}
+```
+
+### IDreamTransformer - ASM转换器
+**位置**: `com.dreammaster.coremod.IDreamTransformer`  
+**用途**: CoreMod字节码转换框架
+
+```java
+public interface IDreamTransformer {
+    String[] targetedClasses();
+    void transform(ClassNode classNode);
+    void checkMethodNode(MethodNode method);
+    void emptyMethodNode(MethodNode method);
+}
+```
+
+## Helper类库
+
+| Helper类 | 用途 | 关键方法 |
+|---------|------|---------|
+| **TConstructHelper** | 匠魂集成 | 工具、装备配方 |
+| **RailcraftHelper** | 铁路集成 | 铁轨、推车配置 |
+| **TCHelper** | 神秘学集成 | 研究、要素 |
+| **BloodMagicHelper** | 血魔法集成 | 祭坛、仪式 |
+| **BotaniaHelper** | 植物魔法集成 | 花朵、符文 |
+| **ForestryHelper** | 林业集成 | 蜜蜂、树木 |
+
+---
+
+# GTNHLib 可重用代码库
+
+**仓库地址**: https://github.com/GTNewHorizons/GTNHLib  
+**项目定位**: GTNH核心库，提供渲染、工具、数据结构等基础设施
+
+## 核心接口系统
+
+### 1. 物品能力系统
+
+```java
+// 物品源
+public interface ItemSource {
+    ItemStack extract(int amount, boolean simulate);
+}
+
+// 物品槽
+public interface ItemSink {
+    ItemStack insert(ItemStack stack, boolean simulate);
+}
+
+// 双向IO
+public interface ItemIO extends ItemSource, ItemSink {
+}
+```
+
+**使用示例**:
+```java
+public class MyInventory implements ItemIO {
+    private List<ItemStack> items = new ArrayList<>();
+    
+    @Override
+    public ItemStack extract(int amount, boolean simulate) {
+        if (items.isEmpty()) return null;
+        ItemStack stack = items.get(0).copy();
+        stack.stackSize = Math.min(amount, stack.stackSize);
+        if (!simulate) {
+            items.get(0).stackSize -= stack.stackSize;
+            if (items.get(0).stackSize <= 0) {
+                items.remove(0);
+            }
+        }
+        return stack;
+    }
+    
+    @Override
+    public ItemStack insert(ItemStack stack, boolean simulate) {
+        if (!simulate) {
+            items.add(stack.copy());
+        }
+        return null;
+    }
+}
+```
+
+### 2. 坐标系统
+
+```java
+// 不可变坐标
+public interface IBlockPos {
+    int getX();
+    int getY();
+    int getZ();
+    IBlockPos offset(ForgeDirection direction);
+    long asLong();  // 压缩为long
+}
+
+// 可变坐标
+public interface IMutableBlockPos extends IBlockPos {
+    void setX(int x);
+    void setY(int y);
+    void setZ(int z);
+    void set(int x, int y, int z);
+}
+```
+
+**CoordinatePacker - 坐标压缩**:
+```java
+// 压缩: 26bit X + 12bit Y + 26bit Z = 64bit Long
+public class CoordinatePacker {
+    public static long pack(int x, int y, int z) {
+        return ((long)(x & 0x3FFFFFF) << 38) | 
+               ((long)(y & 0xFFF) << 26) | 
+               ((long)(z & 0x3FFFFFF));
+    }
+    
+    public static int unpackX(long packed) {
+        return (int)(packed >> 38);
+    }
+    
+    public static int unpackY(long packed) {
+        return (int)((packed >> 26) & 0xFFF);
+    }
+    
+    public static int unpackZ(long packed) {
+        return (int)(packed & 0x3FFFFFF);
+    }
+}
+```
+
+### 3. 渲染系统
+
+#### VAO/VBO接口
+
+```java
+public interface IVertexArrayObject {
+    void bind();
+    void unbind();
+    void draw();
+    void render();
+}
+
+public interface IVertexBuffer {
+    void bind();
+    void allocate(int size);
+    void update(ByteBuffer data);
+    void draw(int mode, int count);
+    void setupState();
+}
+```
+
+## 工具类库
+
+### NumberFormatUtil - 数字格式化
+
+```java
+public class NumberFormatUtil {
+    // 紧凑格式: 1234 → "1.2K"
+    public static String formatNumberCompact(long number) {
+        String[] units = {"", "K", "M", "B", "T", "Q"};
+        int unitIndex = 0;
+        double value = number;
+        
+        while (value >= 1000 && unitIndex < units.length - 1) {
+            value /= 1000;
+            unitIndex++;
+        }
+        
+        return String.format("%.1f%s", value, units[unitIndex]);
+    }
+    
+    // 指数格式: 123456789 → "1.23e8"
+    public static String formatExponential(long number) {
+        return String.format("%.2e", (double)number);
+    }
+    
+    // 带分隔符: 1234567 → "1,234,567"
+    public static String formatNumber(long number) {
+        return NumberFormat.getInstance().format(number);
+    }
+}
+```
+
+### ObjectPooler - 对象池
+
+```java
+public class ObjectPooler<T> {
+    private final Supplier<T> factory;
+    private final Consumer<T> resetter;
+    private final Queue<T> pool = new ConcurrentLinkedQueue<>();
+    private final int maxSize;
+    
+    public ObjectPooler(Supplier<T> factory, Consumer<T> resetter, int maxSize) {
+        this.factory = factory;
+        this.resetter = resetter;
+        this.maxSize = maxSize;
+    }
+    
+    public T acquire() {
+        T obj = pool.poll();
+        return obj != null ? obj : factory.get();
+    }
+    
+    public void release(T obj) {
+        if (pool.size() < maxSize) {
+            resetter.accept(obj);
+            pool.offer(obj);
+        }
+    }
+}
+
+// 使用示例
+ObjectPooler<StringBuilder> stringBuilderPool = new ObjectPooler<>(
+    StringBuilder::new,           // 工厂
+    sb -> sb.setLength(0),        // 重置器
+    100                           // 最大池大小
+);
+
+StringBuilder sb = stringBuilderPool.acquire();
+sb.append("Hello");
+stringBuilderPool.release(sb);
+```
+
+### TimedCache - 分代时间缓存
+
+```java
+public class TimedCache<K, V> {
+    private final Map<K, CacheEntry<V>> cache = new ConcurrentHashMap<>();
+    private final long ttlMillis;
+    
+    public V get(K key) {
+        CacheEntry<V> entry = cache.get(key);
+        if (entry == null || entry.isExpired()) {
+            cache.remove(key);
+            return null;
+        }
+        return entry.value;
+    }
+    
+    public void put(K key, V value) {
+        cache.put(key, new CacheEntry<>(value, System.currentTimeMillis() + ttlMillis));
+    }
+    
+    public void cleanExpired() {
+        cache.entrySet().removeIf(e -> e.getValue().isExpired());
+    }
+    
+    private static class CacheEntry<V> {
+        final V value;
+        final long expiryTime;
+        
+        CacheEntry(V value, long expiryTime) {
+            this.value = value;
+            this.expiryTime = expiryTime;
+        }
+        
+        boolean isExpired() {
+            return System.currentTimeMillis() > expiryTime;
+        }
+    }
+}
+```
+
+### InventoryIterator - 物品栏迭代器
+
+```java
+public interface InventoryIterator extends ListIterator<ItemStack> {
+    ItemStack extract(int amount, boolean simulate);
+    ItemStack insert(ItemStack stack, boolean simulate);
+}
+
+// 使用示例
+InventoryIterator iter = new StandardInventoryIterator(inventory);
+while (iter.hasNext()) {
+    ItemStack stack = iter.next();
+    if (stack != null) {
+        // 提取物品
+        ItemStack extracted = iter.extract(10, false);
+    }
+}
+```
+
+## 数据结构
+
+### ArrayProximityMap4D - 4D空间邻近查询
+
+```java
+// 用于快速查找空间中的邻近对象
+public class ArrayProximityMap4D<T> {
+    public void put(int x, int y, int z, int w, T value);
+    public T get(int x, int y, int z, int w);
+    public List<T> getNearby(int x, int y, int z, int w, int radius);
+}
+```
+
+### IterableBitSet - 可迭代位集
+
+```java
+public class IterableBitSet extends BitSet implements Iterable<Integer> {
+    @Override
+    public Iterator<Integer> iterator() {
+        return new Iterator<Integer>() {
+            private int nextBit = nextSetBit(0);
+            
+            @Override
+            public boolean hasNext() {
+                return nextBit != -1;
+            }
+            
+            @Override
+            public Integer next() {
+                int result = nextBit;
+                nextBit = nextSetBit(nextBit + 1);
+                return result;
+            }
+        };
+    }
+}
+
+// 使用示例
+IterableBitSet bitSet = new IterableBitSet();
+bitSet.set(1);
+bitSet.set(5);
+bitSet.set(10);
+
+for (int index : bitSet) {
+    System.out.println(index);  // 输出: 1, 5, 10
+}
+```
+
+### ItemStackMap - 高效物品映射
+
+```java
+public class ItemStackMap<V> {
+    private final Map<ItemStackKey, V> map = new HashMap<>();
+    
+    private static class ItemStackKey {
+        final Item item;
+        final int damage;
+        final NBTTagCompound nbt;
+        
+        ItemStackKey(ItemStack stack) {
+            this.item = stack.getItem();
+            this.damage = stack.getItemDamage();
+            this.nbt = stack.getTagCompound();
+        }
+        
+        @Override
+        public int hashCode() {
+            int hash = item.hashCode();
+            hash = 31 * hash + damage;
+            if (nbt != null) hash = 31 * hash + nbt.hashCode();
+            return hash;
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof ItemStackKey)) return false;
+            ItemStackKey other = (ItemStackKey) obj;
+            return item == other.item && 
+                   damage == other.damage &&
+                   Objects.equals(nbt, other.nbt);
+        }
+    }
+    
+    public V put(ItemStack stack, V value) {
+        return map.put(new ItemStackKey(stack), value);
+    }
+    
+    public V get(ItemStack stack) {
+        return map.get(new ItemStackKey(stack));
+    }
+}
+```
+
+## Mixin系统
+
+### MixinBuilder - Mixin构建器
+
+```java
+public class MixinBuilder {
+    private final List<String> targetClasses = new ArrayList<>();
+    private final List<String> mixinClasses = new ArrayList<>();
+    
+    public MixinBuilder target(String className) {
+        targetClasses.add(className);
+        return this;
+    }
+    
+    public MixinBuilder mixin(String mixinClass) {
+        mixinClasses.add(mixinClass);
+        return this;
+    }
+    
+    public void register() {
+        // 注册Mixin配置
+    }
+}
+
+// 使用示例
+new MixinBuilder()
+    .target("net.minecraft.world.World")
+    .mixin("com.example.MixinWorld")
+    .register();
+```
+
+---
+
+# 跨仓库代码整合建议
+
+## 组合使用示例
+
+### 1. GT5U + GTNHLib 物品处理
+
+```java
+// 使用GTNHLib的ItemIO + GT5U的GTUtility
+public class IntegratedItemHandler implements ItemIO {
+    private final IGregTechTileEntity mte;
+    
+    @Override
+    public ItemStack extract(int amount, boolean simulate) {
+        ItemStack[] items = mte.getStoredItemData();
+        ItemStack result = GTUtility.copyAmount(amount, items[0]);
+        if (!simulate) {
+            items[0].stackSize -= amount;
+        }
+        return result;
+    }
+}
+```
+
+### 2. NHCM + GT5U 配方集成
+
+```java
+public class CustomGTRecipeScript implements IScriptLoader {
+    @Override
+    public void loadRecipes() {
+        // 使用GT5U的RecipeBuilder + NHCM的脚本框架
+        GTValues.RA.stdBuilder()
+            .itemInputs(getModItem("Thaumcraft", "ItemEldritchObject", 1))
+            .itemOutputs(GTOreDictUnificator.get(OrePrefixes.dust, Materials.Thaumium, 4))
+            .duration(200)
+            .EUt(480)
+            .addTo(RecipeMaps.maceratorRecipes);
+    }
+}
+```
+
+### 3. GTNHLib数字格式化 + GT5U能量显示
+
+```java
+public String formatEnergy(long energy) {
+    // 使用GTNHLib的NumberFormatUtil格式化GT5U的能量值
+    return NumberFormatUtil.formatNumberCompact(energy) + " EU";
+}
+
+// 输出: "1.5M EU" instead of "1500000 EU"
+```
+
+---
+
+## 总结
+
+### 代码复用矩阵
+
+| 功能域 | GT5U | NHCM | GTNHLib |
+|-------|------|------|---------|
+| **配方系统** | ✅ 强大 | ✅ 脚本框架 | ❌ |
+| **物品处理** | ✅ 基础 | ❌ | ✅ 能力系统 |
+| **数据结构** | ✅ 中等 | ❌ | ✅ 丰富 |
+| **渲染** | ✅ 基础 | ❌ | ✅ 高级 |
+| **工具类** | ✅ 丰富 | ✅ 集成 | ✅ 通用 |
+| **ASM/Mixin** | ❌ | ✅ CoreMod | ✅ Mixin框架 |
+
+### 推荐使用场景
+
+- **机器开发**: GT5U (MetaTileEntity + Recipe系统)
+- **配方集成**: NHCM (IScriptLoader框架)
+- **渲染优化**: GTNHLib (VAO/VBO系统)
+- **工具方法**: GT5U + GTNHLib 组合
+- **物品管理**: GTNHLib (ItemIO能力系统)
+- **数字格式**: GTNHLib (NumberFormatUtil)
+- **字节码**: NHCM (IDreamTransformer) + GTNHLib (Mixin)
+
