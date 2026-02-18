@@ -4,13 +4,13 @@
 
 ## 📚 文档索引
 
-### 核心文档（8个文件，7970行）
+### 核心文档（8个文件，9522行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
 | **[GT5U_Readme.md](./GT5U_Readme.md)** | 2,310 | GT5-Unofficial全接口列表（228个） | 接口查询 |
 | **[Useful_Readme.md](./Useful_Readme.md)** | 1,798 | 可重用代码、工具类、设计模式 | 代码参考 |
-| **[Wireless_Network_README.md](./Wireless_Network_README.md)** | 905 | GT5U无线电网完整文档（Tesla Tower + Laser系统） | 无线能量传输 |
+| **[Wireless_Network_README.md](./Wireless_Network_README.md)** | 2,457 | GT5U玩家无线能量网络完整文档（命令+代码） | 无线能量系统 |
 | **[AE_README.md](./AE_README.md)** | 942 | AE2架构与286个接口 | AE2集成 |
 | **[PrivateMods_Readme.md](./PrivateMods_Readme.md)** | 660 | 第三方模组201个接口 | 模组扩展 |
 | **[Core_Infrastructure_README.md](./Core_Infrastructure_README.md)** | 990 | 核心基础设施198个接口+696个Mixin | 基础设施 |
@@ -73,6 +73,14 @@
 2. Builder模式 → Useful_Readme.md #设计模式实现 > 建造者模式
 3. 数据结构 → Useful_Readme.md #数据结构与算法
 4. 数字格式化 → Useful_Readme.md #GTNHLib > NumberFormatUtil
+```
+
+### 场景4: 了解无线能量网络
+```
+1. 玩家无线网络基础 → Wireless_Network_README.md #玩家无线能量网络
+2. 能量扣除机制 → Wireless_Network_README.md #能量扣除机制
+3. 命令使用 → Wireless_Network_README.md #命令系统
+4. 代码实现 → Wireless_Network_README.md #代码实现细节
 ```
 
 ---
