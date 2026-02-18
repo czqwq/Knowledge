@@ -4,12 +4,13 @@
 
 ## 📚 文档索引
 
-### 核心文档（7个文件，7065行）
+### 核心文档（8个文件，7970行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
 | **[GT5U_Readme.md](./GT5U_Readme.md)** | 2,310 | GT5-Unofficial全接口列表（228个） | 接口查询 |
 | **[Useful_Readme.md](./Useful_Readme.md)** | 1,798 | 可重用代码、工具类、设计模式 | 代码参考 |
+| **[Wireless_Network_README.md](./Wireless_Network_README.md)** | 905 | GT5U无线电网完整文档（Tesla Tower + Laser系统） | 无线能量传输 |
 | **[AE_README.md](./AE_README.md)** | 942 | AE2架构与286个接口 | AE2集成 |
 | **[PrivateMods_Readme.md](./PrivateMods_Readme.md)** | 660 | 第三方模组201个接口 | 模组扩展 |
 | **[Core_Infrastructure_README.md](./Core_Infrastructure_README.md)** | 990 | 核心基础设施198个接口+696个Mixin | 基础设施 |
