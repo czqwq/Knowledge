@@ -4,18 +4,19 @@
 
 ## 📚 文档索引
 
-### 核心文档（8个文件，7608行）
+### 核心文档（9个文件，8103行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
 | **[GT5U_Readme.md](./GT5U_Readme.md)** | 2,310 | GT5-Unofficial全接口列表（228个） | 接口查询 |
 | **[Useful_Readme.md](./Useful_Readme.md)** | 1,798 | 可重用代码、工具类、设计模式 | 代码参考 |
 | **[Wireless_Network_README.md](./Wireless_Network_README.md)** | 495 | GT5U无线能量系统使用指南（基于Wiki） | 无线能量功能 |
+| **[Wireless_Network_SOURCE_CODE.md](./Wireless_Network_SOURCE_CODE.md)** | 442 | GT5U无线能量网络真实源代码 | 源码参考 |
 | **[AE_README.md](./AE_README.md)** | 942 | AE2架构与286个接口 | AE2集成 |
 | **[PrivateMods_Readme.md](./PrivateMods_Readme.md)** | 660 | 第三方模组201个接口 | 模组扩展 |
 | **[Core_Infrastructure_README.md](./Core_Infrastructure_README.md)** | 990 | 核心基础设施198个接口+696个Mixin | 基础设施 |
 | **[GTNH_Repos_Index.md](./GTNH_Repos_Index.md)** | 363 | 300+仓库索引与统计 | 导航索引 |
-| **README.md** | 2 | 本文档 | 快速入口 |
+| **README.md** | 3 | 本文档 | 快速入口 |
 
 ---
 
@@ -78,9 +79,9 @@
 ### 场景4: 了解无线能量网络
 ```
 1. 玩家无线网络基础 → Wireless_Network_README.md #玩家无线能量网络
-2. 能量扣除机制 → Wireless_Network_README.md #能量扣除机制
-3. 命令使用 → Wireless_Network_README.md #命令系统
-4. 代码实现 → Wireless_Network_README.md #代码实现细节
+2. 查看真实源代码 → Wireless_Network_SOURCE_CODE.md #核心类和命令实现
+3. 能量扣除机制 → Wireless_Network_SOURCE_CODE.md #CoverEnergyWireless
+4. 命令使用 → Wireless_Network_README.md #命令系统
 ```
 
 ---
