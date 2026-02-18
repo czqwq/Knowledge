@@ -1,2457 +1,495 @@
-# GT5-Unofficial 无线电网系统完整文档
+# GT5-Unofficial 无线电网系统文档
+
+**⚠️ 重要声明**: 本文档基于社区讨论、Wiki信息和游戏内观察编写。具体的代码实现细节请查阅 [GT5-Unofficial源代码](https://github.com/GTNewHorizons/GT5-Unofficial)。本文档不包含源代码，仅描述功能和使用方法。
+
+---
 
 ## 📋 目录
 
 1. [概述](#概述)
-2. [玩家无线能量网络（核心系统）](#玩家无线能量网络核心系统)
-3. [能量扣除机制](#能量扣除机制)
-4. [能量增加机制](#能量增加机制)
-5. [命令系统](#命令系统)
-6. [代码实现细节](#代码实现细节)
-7. [补充：Tesla Tower 与 Laser 系统](#补充tesla-tower-与-laser-系统)
-8. [最佳实践与优化](#最佳实践与优化)
+2. [玩家无线能量网络](#玩家无线能量网络)
+3. [命令系统](#命令系统)
+4. [无线能量舱室](#无线能量舱室)
+5. [Tesla Tower 系统](#tesla-tower-系统)
+6. [Laser 能量系统](#laser-能量系统)
+7. [使用指南](#使用指南)
 
 ---
 
 ## 概述
 
-GT5-Unofficial（GregTech 5 非官方版）为 GT New Horizons (GTNH) 模组包提供了**基于玩家的无线能量网络**系统，这是一个全局性的能量共享机制。
+GT5-Unofficial 为 GT New Horizons (GTNH) 模组包提供了多种无线能量传输方式：
 
-### 核心概念
+### 1. 玩家无线能量网络（Player Wireless Energy Network）
+- **特点**: 基于玩家UUID的全局能量存储系统
+- **范围**: 无距离限制，跨维度有效
+- **访问**: 通过无线能量舱室（Wireless Energy Hatch）存取
+- **共享**: 支持玩家组队共享能量池
 
-**玩家无线能量网络**是GT5U的核心无线系统，它允许：
-- 每个玩家拥有独立的全局能量池
-- 通过无线舱室（Wireless Energy Hatch）从玩家网络扣除/增加能量
-- 玩家之间可以组队共享能量网络
-- 跨维度、跨距离的能量访问（无距离限制）
+### 2. Tesla Tower（特斯拉塔）
+- **特点**: 区域性无线能量分配系统
+- **范围**: 可配置半径（默认32格，可扩展）
+- **用途**: 向范围内装有Tesla Coil Cover的机器供电
 
-### 主要组件
-
-1. **玩家无线能量网络** - 基于玩家UUID的全局能量存储系统
-2. **无线能量舱室（MTEWirelessEnergy/MTEHatchWirelessMulti）** - 从玩家网络提取或存入能量
-3. **命令系统** - 管理网络、查看状态、组队共享
-4. **Tesla Tower（辅助）** - 区域性无线能量分配
-5. **Laser 系统（辅助）** - 点对点高通量传输
-
-**来源仓库**: [GTNewHorizons/GT5-Unofficial](https://github.com/GTNewHorizons/GT5-Unofficial)
+### 3. Laser 系统（激光系统）
+- **特点**: 点对点高通量能量传输
+- **范围**: 直线距离，需要对齐
+- **用途**: 超大功率传输，适合后期电网
 
 ---
 
-## 玩家无线能量网络（核心系统）
+## 玩家无线能量网络
 
-### 系统架构
+### 系统概述
+
+玩家无线能量网络是一个**全局能量存储池**，每个玩家都有独立的能量网络：
 
 ```
-[玩家 UUID] → [全局能量池] ← [无线能量舱室]
-                    ↓
-              [能量存储量]
-                    ↓
-         [多方块机器/单方块机器]
+玩家 → 全局能量池（存储在世界数据中）→ 无线舱室 → 机器
 ```
-
-玩家无线能量网络是一个**基于玩家UUID**的全局能量存储系统：
-- 每个玩家拥有独立的能量池
-- 能量池容量可以通过特定方式扩展
-- 能量可以通过无线舱室存入或取出
-- 支持玩家组队共享能量网络
 
 ### 核心特性
 
-#### 1. 全局性
-```java
-特点：
-- 不受距离限制
-- 跨维度访问
-- 无需电缆或物理连接
-- 实时同步（服务器端）
-```
+#### 全局访问
+- ✅ 不受距离限制
+- ✅ 跨维度有效（主世界、下界、末地、其他维度）
+- ✅ 无需物理连接
+- ✅ 玩家离线时仍可运行（需区块加载）
 
-#### 2. 基于玩家UUID
-```java
-标识系统：
-- 每个玩家通过 Minecraft UUID 唯一标识
-- UUID 不随玩家名称改变而改变
-- 支持离线玩家的能量网络持久化
-- 防止名称冲突
-```
+#### 基于UUID
+- 每个玩家通过Minecraft UUID唯一标识
+- UUID不随玩家改名而改变
+- 保证能量网络的持久性和唯一性
 
-#### 3. 团队共享
-```java
-组队机制：
+#### 容量系统
+- 每个玩家网络有能量容量上限
+- 容量可能通过游戏内方式扩展（具体方式取决于服务器配置）
+- 达到容量上限时无法继续存入能量
+
+#### 团队共享
 - 多个玩家可以合并能量网络
-- 组队后共享同一个能量池
-- 所有成员都可以存取能量
-- 能量合并后不可单独撤回
-```
-
-### 无线能量舱室（Wireless Energy Hatch）
-
-#### MTEWirelessEnergy / MTEHatchWirelessMulti
-
-这是连接玩家能量网络和机器的核心组件。
-
-**类型**：
-- **Wireless Energy Input Hatch（输入舱室）** - 从玩家网络扣除能量，供给机器
-- **Wireless Energy Output Hatch（输出舱室）** - 从机器接收能量，存入玩家网络
-
-**支持的机器**：
-- ✅ 所有多方块机器
-- ✅ 部分单方块机器（通过特殊配置）
-- ✅ 能量缓存/电池缓存
-- ✅ 发电机和能量存储设备
-
-#### 工作原理
-
-**输入舱室（从玩家网络扣除能量）**：
-```java
-每 tick 执行：
-1. 检查玩家网络剩余能量
-2. 计算机器需求能量
-3. 从玩家网络扣除能量
-4. 将能量注入机器
-
-伪代码：
-public void onTick() {
-    long machineNeed = getMachineEnergyNeed();
-    UUID playerUUID = getOwnerUUID();
-    
-    long availableInNetwork = GlobalEnergyManager.getEnergy(playerUUID);
-    long toExtract = Math.min(machineNeed, availableInNetwork);
-    
-    if (toExtract > 0) {
-        GlobalEnergyManager.decreaseEnergy(playerUUID, toExtract);
-        injectEnergyToMachine(toExtract);
-    }
-}
-```
-
-**输出舱室（向玩家网络增加能量）**：
-```java
-每 tick 执行：
-1. 检查机器产生的能量
-2. 从机器提取能量
-3. 存入玩家网络
-
-伪代码：
-public void onTick() {
-    long machineOutput = getMachineEnergyOutput();
-    UUID playerUUID = getOwnerUUID();
-    
-    if (machineOutput > 0) {
-        extractEnergyFromMachine(machineOutput);
-        GlobalEnergyManager.increaseEnergy(playerUUID, machineOutput);
-    }
-}
-```
-
-#### 绑定与配置
-
-**玩家绑定**：
-```java
-绑定方式：
-1. 放置无线舱室
-2. 使用螺丝刀（Screwdriver）右键点击
-3. 自动绑定到放置者的 UUID
-4. 显示绑定成功消息
-
-更换绑定（仅OP）：
-1. 使用特定命令重新分配
-2. 或通过 NBT 编辑器修改
-```
-
-**电压等级**：
-```java
-舱室等级：
-- LV, MV, HV, EV, IV, LuV, ZPM, UV, UHV...
-- 等级决定最大传输速率
-- 可以多个舱室并联增加安培数
-
-示例：
-- 1× IV 无线输入舱室 = 8,192 EU/t @ 2A
-- 4× IV 无线输入舱室 = 8,192 EU/t @ 8A (32,768 EU/t 总计)
-```
-
-### 全局能量管理器（GlobalEnergyManager）
-
-这是管理所有玩家能量网络的核心类。
-
-#### 数据结构
-```java
-public class GlobalEnergyManager {
-    // 玩家UUID → 能量网络映射
-    private static Map<UUID, EnergyNetwork> playerNetworks;
-    
-    // 能量网络类
-    public static class EnergyNetwork {
-        private long storedEnergy;        // 当前存储能量
-        private long maxCapacity;          // 最大容量
-        private Set<UUID> teamMembers;     // 团队成员
-        private String teamName;           // 团队名称
-        
-        public long getStoredEnergy() { return storedEnergy; }
-        public long getMaxCapacity() { return maxCapacity; }
-        public Set<UUID> getTeamMembers() { return teamMembers; }
-    }
-}
-```
-
-#### 核心方法
-```java
-// 获取玩家能量
-public static long getEnergy(UUID playerUUID) {
-    EnergyNetwork network = getNetworkForPlayer(playerUUID);
-    return network != null ? network.getStoredEnergy() : 0;
-}
-
-// 扣除能量
-public static boolean decreaseEnergy(UUID playerUUID, long amount) {
-    EnergyNetwork network = getNetworkForPlayer(playerUUID);
-    if (network == null || network.getStoredEnergy() < amount) {
-        return false;
-    }
-    network.storedEnergy -= amount;
-    markDirty(playerUUID);
-    return true;
-}
-
-// 增加能量
-public static boolean increaseEnergy(UUID playerUUID, long amount) {
-    EnergyNetwork network = getOrCreateNetwork(playerUUID);
-    long newAmount = network.getStoredEnergy() + amount;
-    
-    if (newAmount > network.getMaxCapacity()) {
-        network.storedEnergy = network.getMaxCapacity();
-        return false; // 超出容量
-    }
-    
-    network.storedEnergy = newAmount;
-    markDirty(playerUUID);
-    return true;
-}
-
-// 合并网络（组队）
-public static void mergeNetworks(UUID player1, UUID player2) {
-    EnergyNetwork net1 = getNetworkForPlayer(player1);
-    EnergyNetwork net2 = getNetworkForPlayer(player2);
-    
-    // 合并能量和成员
-    long totalEnergy = net1.getStoredEnergy() + net2.getStoredEnergy();
-    long totalCapacity = net1.getMaxCapacity() + net2.getMaxCapacity();
-    
-    EnergyNetwork mergedNetwork = new EnergyNetwork();
-    mergedNetwork.storedEnergy = Math.min(totalEnergy, totalCapacity);
-    mergedNetwork.maxCapacity = totalCapacity;
-    mergedNetwork.teamMembers.addAll(net1.getTeamMembers());
-    mergedNetwork.teamMembers.addAll(net2.getTeamMembers());
-    
-    // 更新所有成员的网络引用
-    for (UUID member : mergedNetwork.teamMembers) {
-        playerNetworks.put(member, mergedNetwork);
-    }
-}
-```
-
-### 容量系统
-
-#### 默认容量
-```java
-初始容量：
-- 新玩家默认容量：通常为 0 或极小值
-- 需要通过特定方式扩展容量
-
-扩展方式（推测）：
-1. 建造特殊多方块结构
-2. 完成特定成就或任务
-3. 使用特殊物品增加容量
-4. 服务器配置文件设置
-```
-
-#### 容量扩展
-```java
-// 扩展容量方法（推测实现）
-public static void increaseCapacity(UUID playerUUID, long additionalCapacity) {
-    EnergyNetwork network = getOrCreateNetwork(playerUUID);
-    network.maxCapacity += additionalCapacity;
-    markDirty(playerUUID);
-}
-
-示例容量值：
-- 初始：1,000,000 EU (1M EU)
-- 中期：1,000,000,000 EU (1B EU)
-- 后期：1,000,000,000,000 EU (1T EU)
-- 极限：Long.MAX_VALUE = 9,223,372,036,854,775,807 EU
-```
-
----
-
-## Tesla Tower 无线能量系统
-
-### 基本介绍
-
-Tesla Tower 是一个 **EV 等级**的多方块结构（Multiblock），能够在一定范围内无线传输能量给配备了特斯拉线圈覆盖物（Tesla Coil Cover）的机器、能量仓口和电池缓存。
-
-#### 优势
-- ✅ 无需复杂的电缆布线
-- ✅ 支持多目标同时供电
-- ✅ 可配置的传输范围和功率
-- ✅ 支持多种电压等级
-
-#### 劣势
-- ❌ 建造成本高昂
-- ❌ 能量传输存在距离损耗
-- ❌ 需要配备专用覆盖物
-- ❌ 范围内所有接收器共享总安培数
-
-### 结构组成
-
-Tesla Tower 的基本结构需要以下组件：
-
-| 组件 | 数量 | 说明 |
-|------|------|------|
-| **Tesla Tower Controller** | 1 | 控制器方块 |
-| **Tesla Toroid Casing** | 128 | 特斯拉环形外壳 |
-| **Tesla Base Casing** | 28 | 特斯拉基座外壳 |
-| **Primary Tesla Windings** | 20 | 主要特斯拉线圈（分等级） |
-| **Secondary Tesla Windings** | 12 | 次要特斯拉线圈 |
-| **Titanium Frame Box** | 16 | 钛框架 |
-| **Capacitor Hatch** | 1+ | 电容器仓口（底层边缘） |
-| **Energy Hatch** | 1+ | 能量仓口（底层边缘） |
-| **Maintenance Hatch** | 1 | 维护仓口（底层边缘） |
-| **Input Hatch** | 0+ | 输入仓口（可选，用于等离子体） |
-
-**注意**：所有总线/仓口必须放置在底层的外壳边缘位置。
-
-### 电容器系统
-
-电容器决定了传输电压和最大输出安培数：
-
-| 电容器等级 | 电压 (EU/t) | 存储容量 (EU) | 单个电容器存储时长 |
-|------------|-------------|---------------|-------------------|
-| **LV** | 32 | 16,384 | 512 ticks |
-| **MV** | 128 | 65,536 | 512 ticks |
-| **HV** | 512 | 262,144 | 512 ticks |
-| **EV** | 2,048 | 1,048,576 | 512 ticks |
-| **IV** | 8,192 | 4,194,304 | 512 ticks |
-| **LuV** | 32,768 | 16,777,216 | 512 ticks |
-| **ZPM** | 131,072 | 67,108,864 | 512 ticks |
-
-**重要规则**：
-- 所有电容器必须是同一等级
-- 每个电容器增加 1A 输出能力
-- 可以有多个电容器仓口
-- 如果电容器等级不一致，低等级仓口会立即烧毁
-
-### 传输范围计算
-
-Tesla Tower 的有效范围由以下公式决定：
-
-```
-范围 = 32 × 线圈加成 × 等离子体加成
-```
-
-#### 线圈加成
-- 如果主线圈等级 ≥ 电容器等级 + 1，则范围增加 25%（线圈加成 = 1.25）
-- 否则，线圈加成 = 1.0
-
-#### 等离子体加成
-
-| 等离子体类型 | 消耗量 | 范围倍数 | 最大范围 | 带线圈加成 |
-|------------|--------|---------|---------|-----------|
-| **Helium Plasma** | 100 L/s | ×2 | 64 | 80 |
-| **Nitrogen Plasma** | 50 L/s | ×2 | 64 | 80 |
-| **Radon Plasma** | 50 L/s | ×4 | 128 | 160 |
-
-**注意**：等离子体加成不叠加，只需要一种等离子体即可。
-
-**已知Bug（截至 2.8 版本）**：通过配置参数可以将传输范围设置为无限制，使得线圈和等离子体加成变得不必要。
-
-### 能量接收配置
-
-#### 单方块机器
-- 在机器任意侧面（除正面）安装 **Tesla Coil Cover（特斯拉线圈覆盖物）**
-- 覆盖物会自动拉取与电容器相同电压等级的能量
-- 可以拉取任意安培数，只要有足够的电容器可用
-- **Rich Edition** 和标准版功能相同，仅颜色不同（绿色 vs 黄色）
-
-#### 多方块机器
-- 在能量仓口上安装 **Tesla Coil Cover**
-- 必须将仓口旋转至**朝上**才能接收能量
-- 可以使用多个能量仓口接收更高安培数
-
-#### 电池缓存
-- 在电池缓存上安装 Tesla Coil Cover
-- 每个电池可以拉取最多 2A
-- 电池和电池缓存的电压可以高于传输电压
-- 低电压电池不会爆炸，但无法接收能量
-
-#### Tesla Transceivers（特斯拉收发器）
-- 整合了电池缓存和覆盖物的单一方块
-- 仅支持到 IV 等级
-- ⚠️ **危险**：如果电压不匹配会爆炸，升级时需特别小心
-
-### GUI 配置参数
-
-Tesla Tower 控制器提供以下可配置参数：
-
-| 参数 | 说明 | 默认值 | 建议 |
-|------|------|--------|------|
-| **Hysteresis Low** | 滞后低值 | - | 可忽略（无实际作用） |
-| **Hysteresis High** | 滞后高值 | - | 可忽略（无实际作用） |
-| **Transfer Radius** | 传输半径 | 32 | ⚠️ 可设置为任意值（Bug） |
-| **Transceiver Radius** | 收发器专用半径 | - | 已损坏，无效果 |
-| **Cover Radius** | 覆盖物专用半径 | - | 已损坏，无效果 |
-| **Voltage** | 输出电压 | - | 设为 -1 使用最大值 |
-| **Current** | 输出安培数 | - | 设为 -1 使用最大值 |
-| **Scan Time** | 扫描时间（ticks） | - | 已损坏，无效果 |
-| **Overdrive** | 超频模式 | 0 | 1=启用，但有25%额外损耗 |
-
-#### Overdrive（超频）模式
-- 启用时（设为 1）：输出功率翻倍
-- 代价：所有能量损失 25%（额外于距离损耗）
-- 建议：仅在极端需求时使用
-
-### 视觉效果配置
-
-Tesla Tower 会在所有接收能量的机器和收发器之间显示动画电弧，虽然很酷但不利于 TPS 性能。
-
-**禁用方法**：
-```
-配置文件路径: /config/tectech.cfg
-设置: TESLA_VISUAL_EFFECT=false
-```
-
----
-
-## Laser 激光能量系统
-
-### 基本介绍
-
-Laser 系统是一种**点对点**的高通量能量传输方式，用于后期能量传输。
-
-#### 优势
-- ✅ 可传输极高功率（远超电缆）
-- ✅ 损耗极低（每个激光仓口每秒仅损失 1 EU × 最大安培数）
-- ✅ 易于升级（仅需更换仓口）
-- ✅ 不受方块阻挡影响
-
-#### 劣势
-- ❌ 建造成本极高
-- ❌ 一个激光源只能连接一个激光目标
-- ❌ 大多数机器不能直接连接激光
-- ❌ 需要精确对齐
-
-### 系统组件
-
-| 组件 | 用途 | 说明 |
-|------|------|------|
-| **Laser Source Hatch** | 激光源仓口 | 安装在供电机器上 |
-| **Laser Target Hatch** | 激光目标仓口 | 安装在受电机器上 |
-| **Laser Vacuum Pipe** | 激光真空管道 | 连接源和目标（可选） |
-| **Laser Mirror** | 激光镜 | 用于转向激光（后期解锁） |
-| **Spray Can** | 喷漆罐 | 用于颜色编码 |
-
-### 设置步骤
-
-1. **安装激光源仓口** - 在供电机器（如 Active Transformer）上添加 Laser Source Hatch
-2. **安装激光目标仓口** - 在受电机器上添加 Laser Target Hatch
-3. **对齐仓口** - 两个仓口必须在一条直线上面对面（除非使用激光镜）
-4. **电压匹配** - 两个仓口必须是相同电压等级
-5. **连接管道** - 使用 Laser Vacuum Pipe 连接（或直接相邻）
-6. **颜色编码** - 使用喷漆罐将源、目标和管道涂成相同颜色
-
-**示例配置**：
-```
-[Active Transformer] --[Laser Source]--[Laser Pipe]--[Laser Target]-- [Processing Array]
-```
-
-### 支持激光的机器
-
-以下多方块机器支持激光仓口：
-
-#### TecTech 系列
-- 所有 TecTech 多方块机器
-
-#### 大型机器
-- 所有 Mega 变体机器
-  - 注意：如果结构中有玻璃，必须是至少 UV 玻璃
-
-#### 高级发电
-- 所有 XL 涡轮机
-- Power Station/PSS
-
-#### 特殊多方块
-- Lapotronic Supercapacitor（需要至少 UV 玻璃）
-- Advanced Assembly Line（高级装配线）
-- Component Assembly Line（组件装配线）
-- Compact Fusion Computer（紧凑聚变计算机）
-- Electric Implosion Compressor（电动爆破压缩机）
-- Large Essentia Smeltery（大型源质冶炼厂）
-- Miniature Wormhole Generator（微型虫洞发生器）
-- Nano Forge（纳米锻造厂）
-- Naquadah Fuel Refinery（硅岩燃料精炼厂）
-- PCB Factory（PCB 工厂）
-- Precise Auto-Assembler MT-3662（精密自动装配机）
-- Pseudostable Black Hole Containment Field（伪稳定黑洞约束场）
-- Quantum Force Transformer（量子力转换器）
-- Space Elevator（太空电梯）
-- Water Purification Plant（水净化厂）
-
-### Active Transformer（主动变压器）
-
-Active Transformer 是激光电网的核心节点：
-
-**功能**：
-- 使用超高安培激光连接接收和发送能量
-- 通过 TecTech 16A/64A Dynamo Hatches 分配能量
-- 可以直接供电给激光兼容的多方块机器
-
-**建议用途**：
-- 作为电网中的能量分配节点
-- 电压转换和功率调节
-- 需要提前规划基础设施以充分利用
-
----
-
-## 能量扣除机制
-
-### 玩家无线网络能量扣除（核心）
-
-这是GT5U无线系统最重要的能量扣除机制，通过**无线能量输入舱室**从玩家的全局能量网络中扣除能量来供给机器。
-
-#### 基本扣除流程
-
-```java
-每 tick (1/20秒) 执行：
-1. 获取舱室绑定的玩家 UUID
-2. 查询玩家网络剩余能量
-3. 计算机器当前能量需求
-4. 从玩家网络扣除能量
-5. 将能量注入机器
-```
-
-#### 详细扣除算法
-
-```java
-public class MTEHatchWirelessInput extends MTEHatch {
-    private UUID ownerUUID;
-    private int voltageTier;
-    private int maxAmperage;
-    
-    @Override
-    public void onTick() {
-        // 1. 获取机器能量需求
-        long machineCapacity = getBaseMetaTileEntity().getEUCapacity();
-        long machineStored = getBaseMetaTileEntity().getStoredEU();
-        long machineNeed = machineCapacity - machineStored;
-        
-        if (machineNeed <= 0) return; // 机器已满
-        
-        // 2. 计算本舱室最大传输速率
-        long maxTransferPerTick = getVoltage() * maxAmperage;
-        long toExtract = Math.min(machineNeed, maxTransferPerTick);
-        
-        // 3. 从玩家网络扣除
-        long playerEnergy = GlobalEnergyManager.getEnergy(ownerUUID);
-        long actualExtract = Math.min(toExtract, playerEnergy);
-        
-        if (actualExtract > 0) {
-            // 扣除玩家网络能量
-            boolean success = GlobalEnergyManager.decreaseEnergy(
-                ownerUUID, 
-                actualExtract
-            );
-            
-            if (success) {
-                // 注入机器
-                getBaseMetaTileEntity().increaseStoredEnergyUnits(
-                    actualExtract, 
-                    true
-                );
-            }
-        }
-    }
-    
-    private long getVoltage() {
-        // 返回舱室电压等级对应的 EU/t
-        switch(voltageTier) {
-            case 1: return 32;      // LV
-            case 2: return 128;     // MV
-            case 3: return 512;     // HV
-            case 4: return 2048;    // EV
-            case 5: return 8192;    // IV
-            case 6: return 32768;   // LuV
-            case 7: return 131072;  // ZPM
-            case 8: return 524288;  // UV
-            default: return 8;      // ULV
-        }
-    }
-}
-```
-
-#### 扣除特性
-
-**无损耗传输**：
-```java
-特点：
-- 没有距离损耗
-- 没有维度限制
-- 传输效率 100%
-- 仅受玩家网络余额限制
-```
-
-**速率限制**：
-```java
-每 tick 最大扣除 = 舱室电压 × 舱室安培数
-
-示例：
-- 1× IV 无线输入舱室 (2A)：8,192 × 2 = 16,384 EU/t
-- 4× IV 无线输入舱室 (2A)：8,192 × 2 × 4 = 65,536 EU/t
-- 1× ZPM 无线输入舱室 (4A)：131,072 × 4 = 524,288 EU/t
-```
-
-**能量不足处理**：
-```java
-当玩家网络能量 < 机器需求时：
-1. 提取所有剩余能量
-2. 部分满足机器需求
-3. 机器可能因能量不足而暂停运行
-4. 不会产生爆炸或损坏
-
-示例：
-- 机器需求：100,000 EU/t
-- 玩家网络剩余：30,000 EU
-- 实际扣除：30,000 EU
-- 玩家网络余额：0 EU
-- 机器获得：30,000 EU（不足以运行）
-```
-
-#### 多舱室并联
-
-```java
-多个无线输入舱室可以同时工作：
-- 每个舱室独立从玩家网络扣除
-- 总扣除 = 所有舱室扣除之和
-- 共享同一个玩家能量池
-- 先到先得（按 tick 执行顺序）
-
-示例：
-机器A：配备 2× IV 舱室
-机器B：配备 1× LuV 舱室
-机器C：配备 4× EV 舱室
-
-同一 tick 内：
-- 机器A 扣除：16,384 × 2 = 32,768 EU/t
-- 机器B 扣除：32,768 × 1 = 32,768 EU/t
-- 机器C 扣除：2,048 × 4 = 8,192 EU/t
-- 总扣除：73,728 EU/t
-
-如果玩家网络仅剩 50,000 EU：
-- 按执行顺序分配，后续舱室可能无法获取足够能量
-```
-
-#### 团队共享扣除
-
-```java
-当多个玩家组成团队时：
-- 所有成员共享同一能量池
-- 任何成员的舱室都可以扣除
-- 能量消耗按实际使用分配
-- 无法追踪单个成员的消耗量
-
-示例：
-团队：玩家A + 玩家B + 玩家C
-共享能量池：10,000,000,000 EU (10B EU)
-
-玩家A的机器扣除：5,000,000 EU/t
-玩家B的机器扣除：3,000,000 EU/t
-玩家C的机器扣除：2,000,000 EU/t
-总扣除：10,000,000 EU/t
-
-20 ticks 后：
-共享能量池剩余：10,000,000,000 - (10,000,000 × 20) = 9,800,000,000 EU
-```
-
-### 特殊扣除场景
-
-#### 场景1：跨维度扣除
-```java
-玩家网络是全局的：
-- 主世界的舱室可以扣除
-- 下界的舱室可以扣除  
-- 末地的舱室可以扣除
-- 模组维度（如月球、火星）也可以扣除
-- 所有维度共享同一能量池
-```
-
-#### 场景2：离线扣除
-```java
-玩家离线时：
-- 舱室继续工作
-- 继续从玩家网络扣除能量
-- 能量耗尽后机器停止
-- 常用于AFK发电/自动化
-
-注意：
-- 需要区块加载（Chunk Loader）
-- 玩家必须提前存储足够能量
-```
-
-#### 场景3：多方块机器扣除
-```java
-多方块结构：
-- 可以安装多个无线输入舱室
-- 每个舱室提供额外安培数
-- 适合高功率消耗的后期机器
-
-示例（聚变反应堆）：
-- 功率需求：2,000,000 EU/t
-- 配置：16× ZPM 无线输入舱室 (4A each)
-- 总供电：131,072 × 4 × 16 = 8,388,608 EU/t
-- 足以满足需求
-```
-
----
-
-## 能量增加机制
-
-### 玩家无线网络能量增加（核心）
-
-通过**无线能量输出舱室**将发电机或能量存储设备产生的能量存入玩家的全局能量网络。
-
-#### 基本增加流程
-
-```java
-每 tick (1/20秒) 执行：
-1. 获取舱室绑定的玩家 UUID
-2. 检查机器/发电机的可用能量
-3. 从机器提取能量
-4. 存入玩家能量网络
-5. 检查是否超出容量上限
-```
-
-#### 详细增加算法
-
-```java
-public class MTEHatchWirelessOutput extends MTEHatch {
-    private UUID ownerUUID;
-    private int voltageTier;
-    private int maxAmperage;
-    
-    @Override
-    public void onTick() {
-        // 1. 获取机器可用能量
-        long machineStored = getBaseMetaTileEntity().getStoredEU();
-        
-        if (machineStored <= 0) return; // 机器无能量
-        
-        // 2. 计算本舱室最大传输速率
-        long maxTransferPerTick = getVoltage() * maxAmperage;
-        long toExtract = Math.min(machineStored, maxTransferPerTick);
-        
-        // 3. 查询玩家网络容量
-        long networkCapacity = GlobalEnergyManager.getCapacity(ownerUUID);
-        long networkStored = GlobalEnergyManager.getEnergy(ownerUUID);
-        long networkSpace = networkCapacity - networkStored;
-        
-        if (networkSpace <= 0) return; // 玩家网络已满
-        
-        // 4. 计算实际存入量
-        long actualExtract = Math.min(toExtract, networkSpace);
-        
-        if (actualExtract > 0) {
-            // 从机器提取
-            getBaseMetaTileEntity().decreaseStoredEU(actualExtract, true);
-            
-            // 存入玩家网络
-            boolean success = GlobalEnergyManager.increaseEnergy(
-                ownerUUID,
-                actualExtract
-            );
-            
-            if (!success) {
-                // 失败则退还给机器
-                getBaseMetaTileEntity().increaseStoredEnergyUnits(
-                    actualExtract,
-                    true
-                );
-            }
-        }
-    }
-    
-    private long getVoltage() {
-        switch(voltageTier) {
-            case 1: return 32;      // LV
-            case 2: return 128;     // MV
-            case 3: return 512;     // HV
-            case 4: return 2048;    // EV
-            case 5: return 8192;    // IV
-            case 6: return 32768;   // LuV
-            case 7: return 131072;  // ZPM
-            case 8: return 524288;  // UV
-            default: return 8;      // ULV
-        }
-    }
-}
-```
-
-#### 增加特性
-
-**无损耗传输**：
-```java
-特点：
-- 100% 效率存储
-- 无距离限制
-- 跨维度有效
-- 无传输损耗
-```
-
-**容量上限处理**：
-```java
-当玩家网络容量不足时：
-1. 仅存入剩余空间大小的能量
-2. 多余能量保留在机器内
-3. 发电机可能因缓存满而暂停发电
-4. 不会丢失能量
-
-示例：
-- 发电机产出：1,000,000 EU/t
-- 玩家网络容量：1,000,000,000,000 EU (1T EU)
-- 当前存储：999,500,000,000 EU
-- 剩余空间：500,000,000 EU
-- 实际存入：500,000,000 EU
-- 发电机缓存：500,000 EU (无法存入)
-```
-
-**速率限制**：
-```java
-每 tick 最大存入 = 舱室电压 × 舱室安培数
-
-示例：
-- 1× IV 无线输出舱室 (2A)：8,192 × 2 = 16,384 EU/t
-- 4× LuV 无线输出舱室 (4A)：32,768 × 4 × 4 = 524,288 EU/t
-- 16× ZPM 无线输出舱室 (16A)：131,072 × 16 × 16 = 33,554,432 EU/t
-```
-
-#### 多舱室并联存储
-
-```java
-多个无线输出舱室同时工作：
-- 每个舱室独立向玩家网络存入
-- 总存入 = 所有舱室存入之和
-- 共享同一玩家能量池
-- 受总容量上限限制
-
-示例：
-发电机A：配备 2× IV 舱室，产出 30,000 EU/t
-发电机B：配备 1× LuV 舱室，产出 100,000 EU/t
-发电机C：配备 4× EV 舱室，产出 10,000 EU/t
-
-同一 tick 内：
-- 发电机A 存入：30,000 EU/t
-- 发电机B 存入：100,000 EU/t
-- 发电机C 存入：10,000 EU/t
-- 总存入：140,000 EU/t
-- 玩家网络每秒增加：140,000 × 20 = 2,800,000 EU/s
-```
-
-#### 团队共享存储
-
-```java
-当多个玩家组成团队时：
-- 所有成员的舱室存入同一能量池
-- 任何成员都可以使用全部能量
-- 适合团队合作大型项目
-
-示例：
-团队：玩家A + 玩家B
-共享能量池容量：100,000,000,000 EU (100B EU)
-
-玩家A的发电站：10 × 聚变反应堆，总输出 50,000,000 EU/t
-玩家B的太阳能场：1000 × 太阳能板，总输出 5,000,000 EU/t
-总输入：55,000,000 EU/t
-
-1小时后（72,000 ticks）：
-存入能量：55,000,000 × 72,000 = 3,960,000,000,000 EU
-受容量限制，实际存储：100,000,000,000 EU (已满)
-```
-
-### 发电机集成
-
-#### 常见发电机配置
-
-**聚变反应堆（Fusion Reactor）**：
-```java
-配置：
-- 输出功率：可变，通常 10M - 500M EU/t
-- 推荐舱室：16× ZPM 或 UV 无线输出舱室
-- 总传输能力：131,072 × 16 × 16 = 33,554,432 EU/t（ZPM）
-
-优势：
-- 持续稳定输出
-- 直接存入玩家网络
-- 无需复杂电缆
-- 支持跨维度使用
-```
-
-**等离子发电机（Plasma Generator）**：
-```java
-配置：
-- 输出功率：通常 50K - 500K EU/t
-- 推荐舱室：4× LuV 或 ZPM 无线输出舱室
-- 总传输能力：32,768 × 4 × 4 = 524,288 EU/t
-```
-
-**太阳能发电场**：
-```java
-配置：
-- 单个太阳能板：通常 8 - 512 EU/t
-- 数量：数百到数千
-- 推荐：每组 100-200 太阳能板配 1× IV 无线输出舱室
-- 使用电池缓存集中收集，再通过舱室存储
-```
-
-### 特殊增加场景
-
-#### 场景1：发电站设计
-```java
-大型发电站布局：
-[发电机群] → [电池缓存] → [无线输出舱室] → [玩家网络]
-
-优势：
-- 电池缓存平滑输出波动
-- 单一输出点，易于管理
-- 支持超大功率集中输出
-
-示例：
-10× 聚变反应堆
-    ↓
-10× 512M EU 电池缓存
-    ↓
-16× ZPM 无线输出舱室 (16A each)
-    ↓
-玩家网络 (存储速率：33.5M EU/t)
-```
-
-#### 场景2：移动发电
-```java
-使用场景：
-- 采矿基地临时发电
-- 探险时的能量补给
-- 灵活部署发电设施
-
-配置：
-1. 便携式发电机（如 燃气轮机）
-2. 配备无线输出舱室
-3. 直接存入玩家网络
-4. 在任何地点都可使用
-```
-
-#### 场景3：多维度能量收集
-```java
-配置：
-主世界：核电站 → 玩家网络
-下界：岩浆发电站 → 玩家网络
-月球：太阳能发电场 → 玩家网络
-火星：风力发电场 → 玩家网络
-
-所有能量汇总到同一玩家网络池中
-在任何维度都可以使用全部能量
-```
+- 合并后所有成员共享同一能量池
+- 能量总和受总容量限制
+- ⚠️ 合并后分离可能有限制（详见命令系统）
 
 ---
 
 ## 命令系统
 
-GT5-Unofficial 提供了一套命令来管理玩家无线能量网络，包括查看状态、组队共享等功能。
+GT5-Unofficial 提供命令来管理玩家无线能量网络。
 
-### 核心命令
+### `/gt global_energy_display <playerID>`
 
-#### `/gt global_energy_display <playerID>`
+**功能**: 查看指定玩家的无线能量网络状态
 
-查看指定玩家的无线能量网络状态。
-
-**语法**：
+**用法**:
 ```
 /gt global_energy_display <玩家名称或UUID>
 ```
 
-**功能**：
-- 显示玩家网络当前存储的能量
-- 显示网络最大容量
-- 显示团队成员列表（如果有）
-- 显示网络使用率百分比
+**显示信息**:
+- 玩家标识（名称和UUID）
+- 当前存储的能量 (EU)
+- 最大能量容量 (EU)
+- 使用率百分比
+- 团队成员列表（如果有组队）
 
-**示例**：
+**权限**:
+- 查看自己的网络：普通玩家
+- 查看他人的网络：通常需要OP权限
+
+**示例**:
 ```
 /gt global_energy_display Steve
 
-输出：
-========== 无线能量网络信息 ==========
-玩家: Steve (UUID: 12345678-1234-1234-1234-123456789012)
+可能的输出：
+玩家: Steve
 当前能量: 5,234,567,890 EU
 最大容量: 10,000,000,000 EU
 使用率: 52.35%
-团队成员: Steve, Alex, Bob
-====================================
 ```
 
-**权限**：
-- 查看自己的网络：无需特殊权限
-- 查看他人的网络：需要OP权限或特殊权限
+### `/gt global_energy_join <player1> <player2>`
 
-**用途**：
-- 监控能量余额
-- 规划能量使用
-- 检查团队能量池状态
-- 调试能量问题
+**功能**: 将两个玩家的能量网络合并为一个共享网络
 
-#### `/gt global_energy_join <player1> <player2>`
-
-将两个玩家的能量网络合并为一个团队。
-
-**语法**：
+**用法**:
 ```
 /gt global_energy_join <玩家1> <玩家2>
 ```
 
-**功能**：
-- 合并两个玩家的能量网络
-- 合并能量总和（受容量限制）
-- 合并容量总和
-- 所有团队成员共享能量池
+**效果**:
+- 合并两个玩家的能量总和
+- 合并两个玩家的容量总和
+- 所有团队成员可以访问共享能量池
 
-**示例**：
-```
-/gt global_energy_join Steve Alex
+**权限**:
+- 当前实现：通常需要OP权限
+- 社区讨论：希望允许玩家自主组队
 
-执行前：
-Steve 网络: 3,000,000,000 EU / 5,000,000,000 EU
-Alex 网络: 2,000,000,000 EU / 4,000,000,000 EU
-
-执行后：
-Steve+Alex 共享网络: 5,000,000,000 EU / 9,000,000,000 EU
-团队成员: Steve, Alex
-```
-
-**重要特性**：
-```java
-合并规则：
-1. 能量总和 = 玩家1能量 + 玩家2能量
-2. 容量总和 = 玩家1容量 + 玩家2容量
-3. 如果能量总和 > 容量总和，能量被截断到容量上限
-4. 合并后不可撤销（除非重新组队）
-```
-
-**权限**：
-- 当前版本：仅OP可执行（有争议）
-- 社区建议：允许玩家自行组队
-
-**注意事项**：
-- ⚠️ 合并是永久性的，无法单独分离
-- ⚠️ 任何成员都可以使用全部能量
-- ⚠️ 无法追踪单个成员的贡献
+**注意事项**:
+- ⚠️ 合并操作可能是永久性的
+- ⚠️ 离队方式存在限制（目前可能通过 `/gt global_energy_join <自己> <自己>` 创建新网络，但能量不会转移）
 - ⚠️ 建议仅与信任的玩家组队
 
-#### 离开团队（非正式方法）
-
-**当前方法**（截至2.8版本）：
-```
-/gt global_energy_join <你的名字> <你的名字>
-```
-
-**效果**：
-- 创建一个仅包含自己的新网络
-- 但能量不会从原团队转移（已知Bug）
-- 原团队保留所有能量
-- 你将获得一个空的新网络
-
-**示例**：
-```
-Steve 和 Alex 组队，共享 10B EU
-
-Steve 执行：/gt global_energy_join Steve Steve
-
-结果：
-- Steve 获得新网络：0 EU / 原容量
-- Alex 保留原网络：10B EU / 原总容量
-- Steve 失去对原能量的访问权
-```
-
-**问题**：
-- 能量分配不公平
-- 先离开者损失能量
+**已知问题**:
+- 离队后能量分配不公平
+- 先离开的玩家可能失去对原能量的访问
 - 社区已提出改进建议
 
-### 社区建议的命令改进
+---
 
-以下是社区提出的改进方案（可能在未来版本实现）：
+## 无线能量舱室
 
-#### `/gt global_energy_members`
-```
-功能：列出当前团队的所有成员
-权限：任何玩家查看自己的团队
-```
+### 舱室类型
 
-#### `/sp join <玩家名>`
-```
-功能：邀请玩家加入你的能量网络
-权限：普通玩家（无需OP）
-需求：对方同意
-```
+无线能量舱室是连接玩家能量网络和机器的方块。
 
-#### `/sp kick <玩家名>`
-```
-功能：将玩家从团队中移除
-权限：团队创建者或管理员
-效果：按贡献比例分配能量
-```
+#### Wireless Energy Input Hatch（无线能量输入舱室）
+- **功能**: 从玩家能量网络提取能量，供给机器
+- **使用**: 安装在多方块机器的能量仓口位置
+- **速率**: 根据舱室电压等级（LV, MV, HV, EV, IV, LuV, ZPM, UV等）
+- **安培**: 支持多安培舱室，可并联多个舱室
 
-#### `/sp leave`
+#### Wireless Energy Output Hatch（无线能量输出舱室）
+- **功能**: 从发电机/机器提取能量，存入玩家网络
+- **使用**: 安装在发电机或能量产生设备上
+- **速率**: 根据舱室电压等级
+- **限制**: 受玩家网络容量上限限制
+
+### 工作机制
+
+#### 能量提取（Input Hatch）
 ```
-功能：离开当前团队
-权限：普通玩家
-效果：带走自己贡献的能量份额
-```
+工作流程：
+1. 机器需要能量运行
+2. 无线输入舱室从玩家能量池提取
+3. 能量注入机器内部缓存
+4. 机器使用能量运行
 
-### 命令实现细节
-
-#### 源代码位置
-
-```java
-文件路径（推测）：
-src/main/java/gregtech/common/misc/GT_Command.java
-src/main/java/gregtech/common/misc/GlobalEnergyWorldSavedData.java
+限制：
+- 提取速率 = 舱室电压 × 舱室安培数
+- 玩家网络余额不足时机器可能停止
+- 无距离损耗
 ```
 
-#### global_energy_display 实现
+#### 能量存储（Output Hatch）
+```
+工作流程：
+1. 发电机产生能量
+2. 无线输出舱室提取发电机产出
+3. 能量存入玩家能量池
+4. 发电机继续运行
 
-```java
-public class GT_Command extends CommandBase {
-    public void processCommand(ICommandSender sender, String[] args) {
-        if (args[0].equals("global_energy_display")) {
-            if (args.length < 2) {
-                sender.addChatMessage("用法: /gt global_energy_display <player>");
-                return;
-            }
-            
-            String targetPlayer = args[1];
-            UUID playerUUID = getPlayerUUID(targetPlayer);
-            
-            if (playerUUID == null) {
-                sender.addChatMessage("玩家未找到: " + targetPlayer);
-                return;
-            }
-            
-            // 获取能量网络信息
-            EnergyNetwork network = GlobalEnergyManager.getNetwork(playerUUID);
-            
-            if (network == null) {
-                sender.addChatMessage("该玩家没有能量网络");
-                return;
-            }
-            
-            // 显示信息
-            sender.addChatMessage("========== 无线能量网络信息 ==========");
-            sender.addChatMessage("玩家: " + targetPlayer);
-            sender.addChatMessage("UUID: " + playerUUID.toString());
-            sender.addChatMessage(String.format("当前能量: %,d EU", network.getStoredEnergy()));
-            sender.addChatMessage(String.format("最大容量: %,d EU", network.getMaxCapacity()));
-            sender.addChatMessage(String.format("使用率: %.2f%%", 
-                network.getStoredEnergy() * 100.0 / network.getMaxCapacity()));
-            
-            // 显示团队成员
-            if (network.getTeamMembers().size() > 1) {
-                sender.addChatMessage("团队成员: " + 
-                    String.join(", ", getPlayerNames(network.getTeamMembers())));
-            }
-            
-            sender.addChatMessage("====================================");
-        }
-    }
-    
-    private UUID getPlayerUUID(String playerName) {
-        // 尝试直接解析为UUID
-        try {
-            return UUID.fromString(playerName);
-        } catch (IllegalArgumentException e) {
-            // 按名称查找玩家
-            EntityPlayer player = getPlayer(playerName);
-            return player != null ? player.getUniqueID() : null;
-        }
-    }
-}
+限制：
+- 存储速率 = 舱室电压 × 舱室安培数
+- 玩家网络容量满时无法继续存储
+- 100%传输效率，无损耗
 ```
 
-#### global_energy_join 实现
+### 绑定机制
 
-```java
-public void executeGlobalEnergyJoin(String[] args) {
-    if (args.length < 3) {
-        throw new WrongUsageException("用法: /gt global_energy_join <player1> <player2>");
-    }
-    
-    String player1Name = args[1];
-    String player2Name = args[2];
-    
-    UUID uuid1 = getPlayerUUID(player1Name);
-    UUID uuid2 = getPlayerUUID(player2Name);
-    
-    if (uuid1 == null || uuid2 == null) {
-        throw new CommandException("玩家未找到");
-    }
-    
-    // 合并网络
-    GlobalEnergyManager.mergeNetworks(uuid1, uuid2);
-    
-    // 通知玩家
-    notifyPlayer(uuid1, "能量网络已与 " + player2Name + " 合并");
-    notifyPlayer(uuid2, "能量网络已与 " + player1Name + " 合并");
-}
+- 舱室通常绑定到放置者的UUID
+- 使用螺丝刀（Screwdriver）可能可以配置
+- 绑定后只能访问对应玩家的能量网络
+
+### 应用场景
+
+#### 远程供电
+```
+主基地发电站 → 无线输出舱室 → 玩家能量网络
+                                    ↓
+            采矿基地机器 ← 无线输入舱室 ← 玩家能量网络
 ```
 
-### 使用场景与最佳实践
-
-#### 场景1：个人使用
+#### 跨维度能量收集
 ```
-1. 不使用任何组队命令
-2. 仅使用 /gt global_energy_display 查看自己的能量
-3. 完全控制自己的能量网络
-4. 无需担心他人使用你的能量
-```
-
-#### 场景2：双人合作
-```
-步骤：
-1. 玩家A 和 玩家B 商定组队
-2. OP 执行：/gt global_energy_join PlayerA PlayerB
-3. 两人共享能量网络
-4. 定期使用 /gt global_energy_display 检查余额
-
-注意：
-- 提前协商能量使用规则
-- 建立足够的发电设施
-- 监控能量使用情况
-- 避免一方过度使用
-```
-
-#### 场景3：多人团队
-```
-步骤：
-1. 先组建核心团队（A + B）
-2. 逐个添加成员：
-   /gt global_energy_join PlayerA PlayerC
-   /gt global_energy_join PlayerA PlayerD
-   ...
-3. 所有成员最终共享同一能量池
-
-团队管理：
-- 指定能量管理员
-- 定期检查能量状态
-- 分配能量使用配额
-- 建立团队发电站
-```
-
-#### 场景4：服务器经济系统
-```
-创意用法：
-1. 建立"能量银行"玩家账号
-2. 玩家存储能量到银行
-3. 通过组队加入银行网络
-4. 银行提供能量租赁服务
-
-实现：
-- 银行账号：EnergyBank
-- 用户存储：组队到 EnergyBank
-- 使用计费：通过其他插件记录
-- 提现：重新组队（有损失）
-```
-
-### 调试与故障排查
-
-#### 问题1：无法查看能量
-```
-症状：/gt global_energy_display 显示"没有能量网络"
-
-可能原因：
-1. 玩家从未使用过无线舱室
-2. 能量网络数据损坏
-3. UUID 错误
-
-解决方法：
-1. 放置并使用无线舱室初始化网络
-2. 检查世界保存数据
-3. 确认玩家名称正确
-```
-
-#### 问题2：组队失败
-```
-症状：执行 global_energy_join 命令无效果
-
-可能原因：
-1. 没有OP权限
-2. 玩家名称错误
-3. 参数顺序错误
-
-解决方法：
-1. 确认有OP权限
-2. 使用准确的玩家名称
-3. 检查命令语法
-```
-
-#### 问题3：离队后能量丢失
-```
-症状：使用 global_energy_join <self> <self> 后能量归零
-
-原因：已知Bug - 能量不会转移
-
-临时解决：
-1. 离队前先耗尽能量
-2. 或接受能量损失
-3. 等待官方修复
-```
-
-### 数据持久化
-
-#### 世界保存数据
-
-```java
-能量网络数据保存在：
-<世界文件夹>/data/GlobalEnergyData.dat
-
-数据结构：
-- 玩家UUID → 能量网络映射
-- 能量网络状态（能量、容量、成员）
-- 团队关系
-
-备份建议：
-- 定期备份世界数据
-- 在执行组队命令前备份
-- 记录重要的能量数值
-```
-
-#### NBT 数据格式
-
-```java
-{
-    "networks": [
-        {
-            "uuid": "12345678-1234-1234-1234-123456789012",
-            "storedEnergy": 5000000000L,
-            "maxCapacity": 10000000000L,
-            "teamMembers": [
-                "12345678-1234-1234-1234-123456789012",
-                "87654321-4321-4321-4321-210987654321"
-            ],
-            "teamName": "Team Alpha"
-        },
-        ...
-    ]
-}
+主世界: 核电站 → 玩家网络
+下界: 岩浆发电 → 玩家网络
+月球: 太阳能场 → 玩家网络
+所有能量汇总到同一池中
 ```
 
 ---
 
-## 代码实现细节
+## Tesla Tower 系统
 
-### 全局能量管理器核心类
+### 基本介绍
 
-```java
-package gregtech.common.misc;
+Tesla Tower 是一个**EV等级多方块结构**，提供区域性无线能量分配。
 
-public class GlobalEnergyManager {
-    // 单例模式
-    private static GlobalEnergyManager INSTANCE;
-    
-    // 玩家UUID → 能量网络
-    private Map<UUID, EnergyNetwork> playerToNetwork;
-    
-    // 能量网络 → 所有成员UUID
-    private Map<EnergyNetwork, Set<UUID>> networkToPlayers;
-    
-    /**
-     * 能量网络类
-     */
-    public static class EnergyNetwork {
-        private long storedEnergy;
-        private long maxCapacity;
-        private String teamName;
-        private Set<UUID> members;
-        private boolean dirty; // 标记需要保存
-        
-        public EnergyNetwork(UUID initialMember) {
-            this.storedEnergy = 0;
-            this.maxCapacity = getDefaultCapacity();
-            this.members = new HashSet<>();
-            this.members.add(initialMember);
-            this.teamName = ""; 
-            this.dirty = true;
-        }
-        
-        public long getStoredEnergy() {
-            return storedEnergy;
-        }
-        
-        public long getMaxCapacity() {
-            return maxCapacity;
-        }
-        
-        public Set<UUID> getMembers() {
-            return new HashSet<>(members);
-        }
-        
-        public boolean hasEnergy(long amount) {
-            return storedEnergy >= amount;
-        }
-        
-        public boolean addEnergy(long amount) {
-            if (amount <= 0) return false;
-            
-            long newAmount = storedEnergy + amount;
-            if (newAmount > maxCapacity) {
-                storedEnergy = maxCapacity;
-                dirty = true;
-                return false; // 超出容量
-            }
-            
-            storedEnergy = newAmount;
-            dirty = true;
-            return true;
-        }
-        
-        public boolean removeEnergy(long amount) {
-            if (amount <= 0) return false;
-            if (storedEnergy < amount) return false;
-            
-            storedEnergy -= amount;
-            dirty = true;
-            return true;
-        }
-        
-        public void increaseCapacity(long additionalCapacity) {
-            maxCapacity += additionalCapacity;
-            dirty = true;
-        }
-        
-        private long getDefaultCapacity() {
-            // 从配置读取或返回默认值
-            return 1_000_000_000L; // 1B EU
-        }
-    }
-    
-    /**
-     * 获取或创建玩家的能量网络
-     */
-    public static EnergyNetwork getOrCreateNetwork(UUID playerUUID) {
-        if (INSTANCE == null) {
-            INSTANCE = load();
-        }
-        
-        EnergyNetwork network = INSTANCE.playerToNetwork.get(playerUUID);
-        if (network == null) {
-            network = new EnergyNetwork(playerUUID);
-            INSTANCE.playerToNetwork.put(playerUUID, network);
-            INSTANCE.networkToPlayers.put(network, network.getMembers());
-        }
-        
-        return network;
-    }
-    
-    /**
-     * 获取玩家的能量网络（不创建）
-     */
-    public static EnergyNetwork getNetwork(UUID playerUUID) {
-        if (INSTANCE == null) {
-            INSTANCE = load();
-        }
-        
-        return INSTANCE.playerToNetwork.get(playerUUID);
-    }
-    
-    /**
-     * 获取玩家网络的能量
-     */
-    public static long getEnergy(UUID playerUUID) {
-        EnergyNetwork network = getNetwork(playerUUID);
-        return network != null ? network.getStoredEnergy() : 0;
-    }
-    
-    /**
-     * 获取玩家网络的容量
-     */
-    public static long getCapacity(UUID playerUUID) {
-        EnergyNetwork network = getOrCreateNetwork(playerUUID);
-        return network.getMaxCapacity();
-    }
-    
-    /**
-     * 增加能量
-     */
-    public static boolean increaseEnergy(UUID playerUUID, long amount) {
-        EnergyNetwork network = getOrCreateNetwork(playerUUID);
-        return network.addEnergy(amount);
-    }
-    
-    /**
-     * 扣除能量
-     */
-    public static boolean decreaseEnergy(UUID playerUUID, long amount) {
-        EnergyNetwork network = getNetwork(playerUUID);
-        if (network == null) return false;
-        return network.removeEnergy(amount);
-    }
-    
-    /**
-     * 合并两个玩家的能量网络
-     */
-    public static void mergeNetworks(UUID player1, UUID player2) {
-        EnergyNetwork net1 = getOrCreateNetwork(player1);
-        EnergyNetwork net2 = getOrCreateNetwork(player2);
-        
-        // 如果已经在同一网络，直接返回
-        if (net1 == net2) return;
-        
-        // 创建新的合并网络
-        EnergyNetwork mergedNetwork = new EnergyNetwork(player1);
-        
-        // 合并能量和容量
-        long totalEnergy = net1.getStoredEnergy() + net2.getStoredEnergy();
-        long totalCapacity = net1.getMaxCapacity() + net2.getMaxCapacity();
-        
-        mergedNetwork.storedEnergy = Math.min(totalEnergy, totalCapacity);
-        mergedNetwork.maxCapacity = totalCapacity;
-        
-        // 合并成员
-        mergedNetwork.members.addAll(net1.getMembers());
-        mergedNetwork.members.addAll(net2.getMembers());
-        
-        // 更新所有成员的网络引用
-        for (UUID member : mergedNetwork.members) {
-            INSTANCE.playerToNetwork.put(member, mergedNetwork);
-        }
-        
-        // 清理旧网络
-        INSTANCE.networkToPlayers.remove(net1);
-        INSTANCE.networkToPlayers.remove(net2);
-        INSTANCE.networkToPlayers.put(mergedNetwork, mergedNetwork.getMembers());
-        
-        mergedNetwork.dirty = true;
-    }
-    
-    /**
-     * 保存数据
-     */
-    public static void save() {
-        if (INSTANCE == null) return;
-        
-        // 保存到世界数据
-        GlobalEnergyWorldSavedData data = GlobalEnergyWorldSavedData.get();
-        data.saveNetworks(INSTANCE.networkToPlayers.keySet());
-    }
-    
-    /**
-     * 加载数据
-     */
-    private static GlobalEnergyManager load() {
-        GlobalEnergyManager manager = new GlobalEnergyManager();
-        manager.playerToNetwork = new HashMap<>();
-        manager.networkToPlayers = new HashMap<>();
-        
-        // 从世界数据加载
-        GlobalEnergyWorldSavedData data = GlobalEnergyWorldSavedData.get();
-        Set<EnergyNetwork> networks = data.loadNetworks();
-        
-        for (EnergyNetwork network : networks) {
-            for (UUID member : network.getMembers()) {
-                manager.playerToNetwork.put(member, network);
-            }
-            manager.networkToPlayers.put(network, network.getMembers());
-        }
-        
-        return manager;
-    }
-}
+**来源**: [GTNH Wiki - Tesla Tower](https://wiki.gtnewhorizons.com/wiki/Tesla_tower)
+
+### 核心特性
+
+#### 范围传输
+- **默认范围**: 32格半径（以控制器为中心）
+- **扩展范围**: 
+  - 主线圈等级高于电容器：+25%
+  - 使用等离子体（Helium/Nitrogen/Radon）：×2或×4
+  - 最大可达160格（带线圈加成和Radon等离子体）
+
+#### 能量存储
+- 内部缓存大小取决于电容器数量和等级
+- 每个电容器可存储512 ticks的能量
+- 电容器等级决定传输电压
+
+| 电容器等级 | 电压 (EU/t) | 单个容量 (EU) |
+|------------|-------------|---------------|
+| LV | 32 | 16,384 |
+| MV | 128 | 65,536 |
+| HV | 512 | 262,144 |
+| EV | 2,048 | 1,048,576 |
+| IV | 8,192 | 4,194,304 |
+| LuV | 32,768 | 16,777,216 |
+| ZPM | 131,072 | 67,108,864 |
+
+#### 能量分配
+- 向范围内装有**Tesla Coil Cover**的机器供电
+- 支持单方块机器和多方块机器
+- 电池缓存每个电池可拉取2A
+
+### 能量损耗
+
+**距离损耗公式**:
+```
+损耗 = 距离(格) × 安培数 × 1 EU/t
 ```
 
-### 世界保存数据类
+示例：
+- 距离50格，传输4A
+- 损耗 = 50 × 4 × 1 = 200 EU/t
 
-```java
-package gregtech.common.misc;
+**Overdrive模式**:
+- 启用时输出功率翻倍
+- 额外损失25%总能量
+- 在GUI中设置Overdrive参数为1启用
 
-public class GlobalEnergyWorldSavedData extends WorldSavedData {
-    private static final String DATA_NAME = "GlobalEnergyData";
-    
-    public GlobalEnergyWorldSavedData(String name) {
-        super(name);
-    }
-    
-    public static GlobalEnergyWorldSavedData get() {
-        WorldServer world = DimensionManager.getWorld(0); // 主世界
-        GlobalEnergyWorldSavedData data = (GlobalEnergyWorldSavedData) 
-            world.perWorldStorage.loadData(GlobalEnergyWorldSavedData.class, DATA_NAME);
-        
-        if (data == null) {
-            data = new GlobalEnergyWorldSavedData(DATA_NAME);
-            world.perWorldStorage.setData(DATA_NAME, data);
-        }
-        
-        return data;
-    }
-    
-    @Override
-    public void readFromNBT(NBTTagCompound nbt) {
-        // 从 NBT 读取能量网络数据
-        NBTTagList networksList = nbt.getTagList("networks", 10);
-        
-        for (int i = 0; i < networksList.tagCount(); i++) {
-            NBTTagCompound networkNBT = networksList.getCompoundTagAt(i);
-            
-            // 读取网络数据
-            long storedEnergy = networkNBT.getLong("storedEnergy");
-            long maxCapacity = networkNBT.getLong("maxCapacity");
-            String teamName = networkNBT.getString("teamName");
-            
-            // 读取成员
-            NBTTagList membersList = networkNBT.getTagList("members", 8);
-            Set<UUID> members = new HashSet<>();
-            for (int j = 0; j < membersList.tagCount(); j++) {
-                String uuidString = membersList.getStringTagAt(j);
-                members.add(UUID.fromString(uuidString));
-            }
-            
-            // 重建网络对象
-            // ... (省略)
-        }
-    }
-    
-    @Override
-    public void writeToNBT(NBTTagCompound nbt) {
-        // 写入 NBT
-        NBTTagList networksList = new NBTTagList();
-        
-        for (EnergyNetwork network : GlobalEnergyManager.getAllNetworks()) {
-            NBTTagCompound networkNBT = new NBTTagCompound();
-            
-            networkNBT.setLong("storedEnergy", network.getStoredEnergy());
-            networkNBT.setLong("maxCapacity", network.getMaxCapacity());
-            networkNBT.setString("teamName", network.getTeamName());
-            
-            // 写入成员
-            NBTTagList membersList = new NBTTagList();
-            for (UUID member : network.getMembers()) {
-                membersList.appendTag(new NBTTagString(member.toString()));
-            }
-            networkNBT.setTag("members", membersList);
-            
-            networksList.appendTag(networkNBT);
-        }
-        
-        nbt.setTag("networks", networksList);
-    }
-    
-    public void saveNetworks(Set<EnergyNetwork> networks) {
-        markDirty();
-    }
-    
-    public Set<EnergyNetwork> loadNetworks() {
-        // 从 NBT 加载
-        return new HashSet<>();
-    }
-}
-```
+### 接收方式
 
----
+#### Tesla Coil Cover（特斯拉线圈覆盖物）
+- 安装在机器侧面（非正面）
+- 单方块机器：任意侧面
+- 多方块机器：能量仓口朝上放置
+- 自动从范围内的Tesla Tower拉取能量
 
-## 补充：Tesla Tower 与 Laser 系统
-
-#### 4. 等离子体管理
-```java
-等离子体消耗：
-- 每秒消耗固定量（见范围加成表）
-- 通过 Input Hatch 供应
-- 等离子体耗尽时范围恢复默认值
-- 可实时切换等离子体类型
-```
-
-### Laser 系统高级功能
-
-#### 1. 激光镜系统
-```java
-解锁后可使用激光镜转向：
-- 最多 90° 转向
-- 可串联多个镜片
-- 每个镜片有微小损耗
-- 允许更灵活的布局
-```
-
-#### 2. 颜色编码系统
-```java
-颜色功能：
-- 防止意外连接
-- 组织复杂网络
-- 支持所有 GT 颜色
-- 使用喷漆罐或染料
-```
-
-**最佳实践**：
-```
-红色 - 主电网
-蓝色 - 备用电网
-绿色 - 生产线 A
-黄色 - 生产线 B
-...
-```
-
-#### 3. 多安培传输
-```java
-高等级激光仓口支持：
-- 4A, 16A, 64A, 256A 等
-- 用于超大功率传输
-- 与 Active Transformer 配合
-- 适合集中供电节点
-```
-
-#### 4. 电压转换
-```java
-通过 Active Transformer：
-输入：256A @ ZPM = 256 × 131,072 = 33,554,432 EU/t
-输出：可分配为多个低电压高安培输出
-- 64A @ IV
-- 16A @ LuV
-- ...
-```
-
-### 监控与调试
-
-#### Tesla Tower 故障排查
-```java
-常见问题：
-1. 接收器未收到能量
-   - 检查范围设置
-   - 检查 Tesla Coil Cover 安装
-   - 检查电压等级匹配
-   
-2. 能量耗尽太快
-   - 增加电容器数量
-   - 检查是否有意外接收器
-   - 增加输入能量仓口
-   
-3. 性能问题
-   - 禁用视觉效果
-   - 减少同时接收器数量
-   - 优化范围设置
-```
-
-#### Laser 系统故障排查
-```java
-常见问题：
-1. 激光未连接
-   - 检查对齐（必须直线）
-   - 检查颜色匹配
-   - 检查电压等级匹配
-   - 验证管道连接
-   
-2. 能量传输不足
-   - 检查源机器能量供应
-   - 检查仓口安培等级
-   - 验证目标机器容量
-   
-3. 意外爆炸
-   - 确认电压等级匹配
-   - Tesla Transceiver 特别注意
-   - 升级前先断电
-```
-
----
-
-## 补充：Tesla Tower 与 Laser 系统
-
-GT5-Unofficial 除了玩家无线能量网络外，还提供了两种辅助性的能量传输系统，它们与玩家网络可以配合使用。
-
-### Tesla Tower 无线能量系统（辅助）
-
-Tesla Tower 是一个**区域性无线能量分配系统**，与玩家全局网络不同，它基于物理范围传输能量。
-
-#### 核心代码实现
-
-**Tesla Tower 相关类**：
-
-```java
-// 主要类文件位置（推测）
-gregtech/common/tileentities/multiblocks/electric/MTETeslaTower.java
-gregtech/common/covers/CoverTeslaCoil.java
-gregtech/common/tileentities/machines/MTETeslaTransceiver.java
-```
-
-**关键接口**：
-```java
-public class MTETeslaTower extends GT_MetaTileEntity_MultiblockBase {
-    // 内部能量缓存
-    private long energyStored;
-    private long maxEnergyStorage;
-    
-    // 电容器配置
-    private int capacitorTier;
-    private int capacitorCount;
-    
-    // 范围配置
-    private int transferRadius;
-    private boolean overdriveMode;
-    
-    // 主要方法
-    public void onTick() {
-        receiveEnergyFromHatches();
-        scanForReceivers();
-        distributeEnergy();
-        consumePlasma();
-    }
-    
-    private void distributeEnergy() {
-        List<IEnergyReceiver> receivers = getReceiversInRange();
-        long totalDemand = calculateTotalDemand(receivers);
-        long available = energyStored - calculateLoss();
-        
-        if (available >= totalDemand) {
-            for (IEnergyReceiver receiver : receivers) {
-                long demand = receiver.getEnergyDemand();
-                long loss = calculateDistanceLoss(receiver);
-                receiver.receiveEnergy(demand);
-                energyStored -= (demand + loss);
-            }
-        } else {
-            distributeProportionally(receivers, available);
-        }
-    }
-    
-    private long calculateDistanceLoss(IEnergyReceiver receiver) {
-        int distance = getDistance(receiver);
-        int amperage = receiver.getCurrentAmperage();
-        return distance * amperage * 1; // 1 EU per block per amp
-    }
-}
-```
-
-**Tesla Coil Cover**：
-```java
-public class CoverTeslaCoil extends GT_Cover {
-    private int voltage;
-    private int maxAmperage;
-    
-    public long getEnergyDemand() {
-        if (!isInRange()) return 0;
-        return attachedMachine.getEnergyNeeded();
-    }
-    
-    public void receiveEnergy(long amount) {
-        attachedMachine.injectEnergy(voltage, amount);
-    }
-    
-    public boolean isInRange() {
-        MTETeslaTower tower = findNearestTeslaTower();
-        if (tower == null) return false;
-        return tower.isInRange(this);
-    }
-}
-```
-
-#### Laser 系统相关类
-
-```java
-// 主要类文件位置（推测）
-gregtech/common/tileentities/machines/MTEHatchEnergyLaser.java
-gregtech/common/blocks/BlockLaserPipe.java
-```
-
-**Laser Hatch 基类**：
-```java
-public abstract class MTEHatchEnergyLaser extends GT_MetaTileEntity_Hatch {
-    protected int voltage;
-    protected int amperage;
-    protected int color;
-    
-    // 被动损耗
-    private static final long PASSIVE_LOSS_PER_AMP = 1; // EU per second
-    
-    public long getPassiveLoss() {
-        return amperage * PASSIVE_LOSS_PER_AMP / 20; // per tick
-    }
-}
-```
-
-**Laser Source Hatch**：
-```java
-public class MTEHatchEnergyLaserSource extends MTEHatchEnergyLaser {
-    private MTEHatchEnergyLaserTarget connectedTarget;
-    
-    public void onTick() {
-        applyPassiveLoss();
-        
-        if (connectedTarget != null && isValidConnection()) {
-            transferEnergy();
-        }
-    }
-    
-    private void transferEnergy() {
-        long available = getStoredEnergy();
-        long targetCapacity = connectedTarget.getEnergyCapacity();
-        long toTransfer = Math.min(available, targetCapacity);
-        
-        if (toTransfer > 0) {
-            this.extractEnergy(toTransfer);
-            connectedTarget.receiveEnergy(toTransfer);
-        }
-    }
-    
-    private boolean isValidConnection() {
-        return connectedTarget.getColor() == this.color &&
-               connectedTarget.getVoltage() == this.voltage &&
-               isFacing(connectedTarget);
-    }
-    
-    private void applyPassiveLoss() {
-        long loss = getPassiveLoss();
-        energyStored = Math.max(0, energyStored - loss);
-    }
-}
-```
-
-**Laser Target Hatch**：
-```java
-public class MTEHatchEnergyLaserTarget extends MTEHatchEnergyLaser {
-    public void receiveEnergy(long amount) {
-        // 直接注入到机器的能量网络
-        getBaseMetaTileEntity().increaseStoredEnergyUnits(amount, true);
-    }
-    
-    public long getEnergyCapacity() {
-        return getBaseMetaTileEntity().getEUCapacity() - 
-               getBaseMetaTileEntity().getStoredEU();
-    }
-}
-```
-
-### 能量传输算法
-
-#### Tesla Tower 分配算法
-```java
-// 比例分配算法
-public void distributeProportionally(List<IEnergyReceiver> receivers, long available) {
-    long totalDemand = 0;
-    Map<IEnergyReceiver, Long> demands = new HashMap<>();
-    
-    // 收集需求
-    for (IEnergyReceiver receiver : receivers) {
-        long demand = receiver.getEnergyDemand();
-        demands.put(receiver, demand);
-        totalDemand += demand;
-    }
-    
-    // 计算并分配
-    for (Map.Entry<IEnergyReceiver, Long> entry : demands.entrySet()) {
-        IEnergyReceiver receiver = entry.getKey();
-        long demand = entry.getValue();
-        long share = (available * demand) / totalDemand;
-        
-        long loss = calculateDistanceLoss(receiver);
-        long actualShare = Math.max(0, share - loss);
-        
-        receiver.receiveEnergy(actualShare);
-    }
-    
-    energyStored = 0; // 全部分配完毕
-}
-```
-
-#### 范围检测算法
-```java
-public List<IEnergyReceiver> getReceiversInRange() {
-    List<IEnergyReceiver> receivers = new ArrayList<>();
-    int radius = transferRadius;
-    
-    // 扫描范围内的所有方块
-    for (int x = -radius; x <= radius; x++) {
-        for (int y = -radius; y <= radius; y++) {
-            for (int z = -radius; z <= radius; z++) {
-                int distance = (int) Math.sqrt(x*x + y*y + z*z);
-                if (distance > radius) continue;
-                
-                TileEntity te = world.getTileEntity(
-                    baseX + x, baseY + y, baseZ + z
-                );
-                
-                if (te instanceof IEnergyReceiver) {
-                    IEnergyReceiver receiver = (IEnergyReceiver) te;
-                    if (receiver.hasTeslaCoilCover()) {
-                        receivers.add(receiver);
-                    }
-                }
-            }
-        }
-    }
-    
-    return receivers;
-}
-```
-
-### NBT 数据存储
-
-#### Tesla Tower 持久化
-```java
-@Override
-public void saveNBTData(NBTTagCompound aNBT) {
-    super.saveNBTData(aNBT);
-    aNBT.setLong("energyStored", energyStored);
-    aNBT.setInteger("capacitorTier", capacitorTier);
-    aNBT.setInteger("capacitorCount", capacitorCount);
-    aNBT.setInteger("transferRadius", transferRadius);
-    aNBT.setBoolean("overdriveMode", overdriveMode);
-}
-
-@Override
-public void loadNBTData(NBTTagCompound aNBT) {
-    super.loadNBTData(aNBT);
-    energyStored = aNBT.getLong("energyStored");
-    capacitorTier = aNBT.getInteger("capacitorTier");
-    capacitorCount = aNBT.getInteger("capacitorCount");
-    transferRadius = aNBT.getInteger("transferRadius");
-    overdriveMode = aNBT.getBoolean("overdriveMode");
-}
-```
-
-#### Laser Hatch 持久化
-```java
-@Override
-public void saveNBTData(NBTTagCompound aNBT) {
-    super.saveNBTData(aNBT);
-    aNBT.setInteger("color", color);
-    aNBT.setInteger("voltage", voltage);
-    aNBT.setInteger("amperage", amperage);
-}
-
-@Override
-public void loadNBTData(NBTTagCompound aNBT) {
-    super.loadNBTData(aNBT);
-    color = aNBT.getInteger("color");
-    voltage = aNBT.getInteger("voltage");
-    amperage = aNBT.getInteger("amperage");
-}
-```
-
-### 网络同步
-
-#### 客户端-服务器同步
-```java
-// Tesla Tower GUI 同步
-public void sendGUIData(EntityPlayerMP player) {
-    PacketHandler.sendToPlayer(new PacketTeslaTowerGUI(
-        energyStored,
-        maxEnergyStorage,
-        capacitorTier,
-        capacitorCount,
-        transferRadius
-    ), player);
-}
-
-// 能量变化同步
-public void syncEnergyChange() {
-    if (!world.isRemote && energyChangedFlag) {
-        PacketHandler.sendToAllTracking(
-            new PacketEnergySync(energyStored),
-            this
-        );
-        energyChangedFlag = false;
-    }
-}
-```
-
----
-
-## 最佳实践与优化
-
-### Tesla Tower 最佳实践
-
-#### 1. 电容器配置
-```
-推荐配置：
-- 小型电网：16-32 电容器
-- 中型电网：64-128 电容器
-- 大型电网：256+ 电容器
-
-电压选择：
-- 根据最常用的机器电压等级选择
-- 避免频繁改变电容器等级
-- 预留升级空间
-```
-
-#### 2. 范围优化
-```
-最优范围设置：
-- 不要设置超过实际需要的范围
-- 考虑使用多个小范围 Tesla Tower 而非单个大范围
-- 禁用视觉效果以提升性能
-
-范围规划：
-范围 32 - 约 137,000 方块体积
-范围 64 - 约 1,097,000 方块体积
-范围 128 - 约 8,776,000 方块体积（性能影响大）
-```
-
-#### 3. 输入优化
-```
-能量输入建议：
-- 使用 multi-amp 能量仓口
-- 考虑使用激光能量仓口输入
-- 匹配输入速率与输出需求
-
-示例配置：
-输入：4× 16A IV 能量仓口 = 64A IV = 524,288 EU/t
-电容器：128× IV 电容器 = 128A IV
-缓存：128 × 4,194,304 = 536,870,912 EU
-```
-
-#### 4. 负载均衡
-```
-避免过载：
-- 监控总需求 vs 供应
-- 使用 Industrial Information Panel
-- 设置能量告警阈值
-
-分区供电：
-- 重要机器：专用 Tesla Tower
-- 一般机器：共享 Tesla Tower
-- 临时机器：独立电源
-```
-
-### Laser 系统最佳实践
-
-#### 1. 网络规划
-```
-中心化架构：
-[Central Power] → [Active Transformer] → [Distribution]
-                        ↓ Laser ×16
-                   [Sub Transformers]
-                        ↓ Laser ×4
-                   [Machine Groups]
-
-优势：
-- 易于维护
-- 集中监控
-- 电压转换灵活
-```
-
-#### 2. 颜色管理
-```
-标准化方案：
-红色    - 主电网骨干（ZPM+）
-蓝色    - 次要电网（LuV-ZPM）
-绿色    - 生产线 A（IV）
-黄色    - 生产线 B（IV）
-橙色    - 生产线 C（EV）
-...
-
-文档记录：
-- 维护颜色分配表
-- 标记用途和电压
-- 更新变更日志
-```
-
-#### 3. 维护与升级
-```
-升级流程：
-1. 断开激光连接（移除管道）
-2. 替换低等级仓口
-3. 验证新仓口电压
-4. 重新连接并测试
-5. 确认颜色匹配
-
-安全检查清单：
-□ 电压等级确认
-□ 安培数适配
-□ 颜色编码正确
-□ 对齐验证
-□ 供电机器容量
-```
-
-#### 4. 故障恢复
-```
-冗余设计：
-- 关键机器：双激光输入
-- 备用路径：激光 + 电缆
-- 监控系统：实时告警
-
-快速恢复：
-1. 识别故障点
-2. 切换到备用
-3. 修复主线路
-4. 恢复主路径
-```
+#### Tesla Transceiver（特斯拉收发器）
+- 整合电池缓存和覆盖物功能
+- 仅支持到IV等级
+- ⚠️ 电压不匹配会爆炸
 
 ### 性能优化
 
-#### TPS 优化
-```java
-Tesla Tower：
-1. 禁用视觉效果
-   TESLA_VISUAL_EFFECT=false
-   
-2. 增加扫描间隔（如果允许修改代码）
-   SCAN_INTERVAL = 20 // ticks (默认可能更频繁)
-   
-3. 限制同时接收器数量
-   建议 < 100 个活跃接收器/每个 Tower
-   
-4. 优化范围设置
-   仅覆盖必要区域
-
-Laser 系统：
-1. 减少激光连接数量
-   合并多个小机器到大型多方块
-   
-2. 避免过长的管道
-   虽然不影响能量，但可能影响渲染
-   
-3. 使用 Active Transformer 集中管理
+**禁用视觉效果**（提升TPS）:
 ```
-
-#### 内存优化
-```java
-Tesla Tower：
-- 定期清理接收器缓存
-- 避免过大的内部能量缓存
-- 使用合理的电容器数量
-
-Laser 系统：
-- 颜色索引优化
-- 连接验证缓存
-- 减少不必要的 NBT 数据
-```
-
-### 成本效益分析
-
-#### Tesla Tower vs 电缆
-```
-Tesla Tower 优势场景：
-✅ 多个分散的机器
-✅ 需要灵活移动机器
-✅ 超高功率传输
-✅ 美观需求
-
-电缆优势场景：
-✅ 单一固定路径
-✅ 短距离传输
-✅ 低成本需求
-✅ 简单配置
-```
-
-#### Laser vs Tesla Tower
-```
-Laser 优势场景：
-✅ 点对点超高功率
-✅ 极低损耗需求
-✅ 固定配置
-✅ 超长距离
-
-Tesla Tower 优势场景：
-✅ 多目标供电
-✅ 灵活配置
-✅ 动态负载
-✅ 中等功率需求
-```
-
-### 调试技巧
-
-#### Tesla Tower 调试
-```java
-1. 能量流追踪
-   - 安装 Portable Scanner
-   - 右键点击控制器
-   - 查看实时数据
-
-2. 接收器检测
-   - 检查 Tesla Coil Cover 配置
-   - 验证范围设置
-   - 确认电压匹配
-
-3. 性能分析
-   - 使用 /sampler 命令
-   - 监控 tick time
-   - 识别瓶颈
-
-4. 日志分析
-   启用调试日志：
-   DEBUG_MODE=true
-   查看连接事件和错误
-```
-
-#### Laser 系统调试
-```java
-1. 连接验证
-   检查清单：
-   □ 直线对齐
-   □ 颜色匹配（重要！）
-   □ 电压相同
-   □ 管道完整
-
-2. 能量流测试
-   - 安装能量监控器
-   - 测试最大吞吐量
-   - 验证损耗计算
-
-3. 可视化
-   - F3 模式查看朝向
-   - 使用建筑工具验证对齐
-   - 高亮显示管道路径
-```
-
-### 高级应用
-
-#### 混合电网设计
-```
-架构：
-[主发电站]
-    ↓ Laser (超高功率)
-[中央 Active Transformer]
-    ↓ Laser ×8 (分区)
-[区域 Tesla Tower ×8]
-    ↓ Wireless (灵活分配)
-[机器群组]
-
-优势：
-- 高效传输（Laser）
-- 灵活分配（Tesla）
-- 可扩展性
-- 容错能力
-```
-
-#### 动态负载管理
-```java
-// 概念代码：优先级系统
-public class PriorityEnergyManager {
-    Map<IEnergyReceiver, Integer> priorities;
-    
-    public void distributePriority(long available) {
-        // 按优先级排序
-        List<IEnergyReceiver> sorted = receivers.stream()
-            .sorted((a, b) -> priorities.get(b) - priorities.get(a))
-            .collect(Collectors.toList());
-        
-        // 高优先级优先满足
-        for (IEnergyReceiver receiver : sorted) {
-            long demand = receiver.getEnergyDemand();
-            long toGive = Math.min(available, demand);
-            receiver.receiveEnergy(toGive);
-            available -= toGive;
-            
-            if (available <= 0) break;
-        }
-    }
-}
+配置文件: /config/tectech.cfg
+设置: TESLA_VISUAL_EFFECT=false
 ```
 
 ---
 
-## 附录
+## Laser 能量系统
 
-### 术语表
+### 基本介绍
 
-| 术语 | 英文 | 说明 |
-|------|------|------|
-| **特斯拉塔** | Tesla Tower | 无线能量传输多方块 |
-| **激光系统** | Laser System | 点对点能量传输 |
-| **电容器** | Capacitor | 决定传输电压和安培 |
-| **线圈覆盖物** | Tesla Coil Cover | 接收无线能量的组件 |
-| **激光仓口** | Laser Hatch | 激光能量的源/目标 |
-| **主动变压器** | Active Transformer | 能量转换和分配节点 |
-| **EU** | Energy Unit | 能量单位 |
-| **安培** | Amperage | 电流强度（A） |
-| **电压等级** | Voltage Tier | LV, MV, HV, EV, IV, LuV, ZPM, UV, UHV 等 |
+Laser 系统提供**点对点高通量能量传输**，适合后期超大功率需求。
 
-### 电压等级参考
+**来源**: [GTNH Wiki - Lasers](https://gtnh.miraheze.org/wiki/Lasers)
 
-| 等级 | 名称 | EU/t | 电缆颜色 | 用途 |
-|------|------|------|----------|------|
-| **ULV** | Ultra Low Voltage | 8 | 红色 | 蒸汽时代 |
-| **LV** | Low Voltage | 32 | 灰色 | 早期电气 |
-| **MV** | Medium Voltage | 128 | 橙色 | 中期发展 |
-| **HV** | High Voltage | 512 | 黄色 | 高级机器 |
-| **EV** | Extreme Voltage | 2,048 | 银色 | 极限电压 |
-| **IV** | Insane Voltage | 8,192 | 紫色 | 疯狂电压 |
-| **LuV** | Ludicrous Voltage | 32,768 | 粉色 | 荒谬电压 |
-| **ZPM** | Zero Point Module | 131,072 | 青色 | 零点模块 |
-| **UV** | Ultimate Voltage | 524,288 | 白色 | 终极电压 |
-| **UHV** | Ultra High Voltage | 2,097,152 | 黑色 | 超高电压 |
+### 核心特性
 
-### 快速参考公式
+#### 优势
+- ✅ 可传输极高功率（远超电缆）
+- ✅ 损耗极低（每个仓口仅1 EU/s × 最大安培数被动损耗）
+- ✅ 易于升级（仅需更换仓口）
+- ✅ 不受方块阻挡影响
 
+#### 劣势
+- ❌ 建造成本高
+- ❌ 一个源只能连接一个目标
+- ❌ 大多数机器不能直接连接
+- ❌ 需要精确对齐
+
+### 组件
+
+| 组件 | 用途 |
+|------|------|
+| Laser Source Hatch | 激光源仓口（发送端） |
+| Laser Target Hatch | 激光目标仓口（接收端） |
+| Laser Vacuum Pipe | 激光真空管道（可选连接） |
+| Laser Mirror | 激光镜（用于转向，后期解锁） |
+| Spray Can | 喷漆罐（颜色编码） |
+
+### 设置步骤
+
+1. **安装源仓口**: 在供电机器上安装Laser Source Hatch
+2. **安装目标仓口**: 在受电机器上安装Laser Target Hatch
+3. **对齐仓口**: 两个仓口必须面对面直线对齐（除非使用镜子）
+4. **匹配电压**: 仓口必须是相同电压等级
+5. **连接管道**: 使用Laser Vacuum Pipe连接（或直接相邻）
+6. **颜色编码**: 用喷漆罐将源、目标、管道涂成相同颜色
+
+### 能量损耗
+
+**被动损耗**:
 ```
-Tesla Tower 距离损耗：
-损耗 (EU/t) = 距离 (格) × 安培数 × 1
-
-Tesla Tower 范围：
-范围 (格) = 32 × 线圈加成 × 等离子体加成
-
-Tesla Tower 缓存容量：
-容量 (EU) = 电容器数量 × 电压等级 × 512
-
-Laser 被动损耗：
-损耗 (EU/s) = 最大安培数 × 1
-
-电池缓存充电速率：
-速率 (EU/t) = 电池数量 × 2A × 电压等级
-
-能量单位换算：
-1 tick = 1/20 秒
-1 秒 = 20 ticks
+每个Laser仓口: 1 EU/s × 最大安培数
 ```
 
-### 相关资源
+示例：
+- ZPM等级4A仓口
+- 损耗 = 1 EU/s × 4 = 4 EU/s ≈ 0.2 EU/t
+- 与传输量无关
 
-**官方资源**：
-- GT5-Unofficial 仓库：https://github.com/GTNewHorizons/GT5-Unofficial
-- GTNH Wiki：https://gtnh.miraheze.org/
-- GTNH 主页：https://www.gtnewhorizons.com/
+**传输损耗**: 几乎为0（不受距离影响）
 
-**社区资源**：
-- GTNH Discord：https://discord.gg/gtnh
-- Reddit：r/GTNH
-- 视频教程：YouTube 搜索 "GTNH Tesla Tower" 或 "GTNH Laser"
+### 支持的机器
 
-**代码位置**（推测）：
-- **玩家无线网络**：`gregtech/common/misc/GlobalEnergyManager.java`
-- **无线舱室**：`gregtech/common/tileentities/machines/MTEHatchWirelessMulti.java`
-- **命令处理**：`gregtech/common/misc/GT_Command.java`
-- **世界数据**：`gregtech/common/misc/GlobalEnergyWorldSavedData.java`
-- Tesla Tower：`gregtech/common/tileentities/multiblocks/electric/MTETeslaTower.java`
-- Laser 系统：`gregtech/common/tileentities/machines/MTEHatchEnergyLaser.java`
-- 覆盖物：`gregtech/common/covers/CoverTeslaCoil.java`
-- Active Transformer：`tectech/thing/metaTileEntity/multi/MTEActiveTransformer.java`
+激光系统支持以下多方块机器：
+- 所有TecTech多方块
+- 所有Mega变体机器
+- XL涡轮机
+- 高级装配线
+- 聚变计算机
+- 空间电梯
+- 等等（详见Wiki完整列表）
+
+### Active Transformer（主动变压器）
+
+Active Transformer是激光电网的核心节点：
+- 接收超高安培激光输入
+- 分配到多个低压高安培输出
+- 适合作为区域电网的能量分配中心
+
+---
+
+## 使用指南
+
+### 玩家无线网络最佳实践
+
+#### 个人使用
+```
+建议配置：
+1. 建立发电站，使用无线输出舱室
+2. 各个机器/基地使用无线输入舱室
+3. 定期使用 /gt global_energy_display 检查余额
+4. 规划能量容量，避免溢出
+```
+
+#### 团队协作
+```
+组队前协商：
+1. 明确能量使用规则
+2. 建立团队发电设施
+3. 监控总能量使用
+4. 避免单方过度消耗
+```
+
+### 混合电网设计
+
+结合三种系统的优势：
+
+```
+架构示例：
+[主发电站]
+    ↓ Laser（超高功率长距离传输）
+[区域 Active Transformer]
+    ↓ 分配到多个区域
+[区域 Tesla Tower] + [玩家无线网络]
+    ↓ Tesla Tower（区域供电）+ 无线舱室（个人机器）
+[机器群组]
+
+优势：
+- Laser: 主干传输，高效无损
+- Tesla Tower: 区域内灵活供电
+- 玩家网络: 远程/跨维度个人设备
+```
+
+### 故障排查
+
+#### 玩家网络问题
+
+**症状**: 机器无法从无线网络获取能量
+```
+检查清单：
+□ 玩家网络是否有足够能量？
+□ 无线舱室是否正确绑定？
+□ 舱室电压等级是否足够？
+□ 机器是否需要多个舱室提供足够安培数？
+```
+
+**症状**: 无法查看能量状态
+```
+可能原因：
+1. 命令权限不足
+2. 玩家名称拼写错误
+3. 玩家从未使用过无线系统
+
+解决：
+- 确认有正确权限
+- 使用准确的玩家名或UUID
+- 放置并使用一次无线舱室初始化网络
+```
+
+#### Tesla Tower问题
+
+**症状**: 机器未收到能量
+```
+检查清单：
+□ Tesla Coil Cover是否安装正确？
+□ 机器是否在范围内？
+□ 电压等级是否匹配？
+□ Tesla Tower内部缓存是否有能量？
+□ 多方块机器的仓口是否朝上？
+```
+
+#### Laser系统问题
+
+**症状**: 激光未连接
+```
+检查清单：
+□ 源和目标是否直线对齐？
+□ 颜色是否匹配？
+□ 电压等级是否相同？
+□ 管道是否完整连接？
+```
+
+---
+
+## 参考资源
+
+### 官方资源
+- **GT5-Unofficial源代码**: https://github.com/GTNewHorizons/GT5-Unofficial
+- **GTNH Wiki**: https://gtnh.miraheze.org/
+- **GTNH主页**: https://www.gtnewhorizons.com/
+
+### 社区资源
+- **GTNH Discord**: https://discord.gg/gtnh
+- **Reddit**: r/GTNH
+
+### 相关Wiki页面
+- Tesla Tower: https://wiki.gtnewhorizons.com/wiki/Tesla_tower
+- Lasers: https://gtnh.miraheze.org/wiki/Lasers
+- Electricity Guide: https://gtnh.miraheze.org/wiki/Electricity
 
 ---
 
 ## 文档信息
 
-**文档版本**：1.0  
-**适用游戏版本**：GT New Horizons 2.8+  
-**最后更新**：2026-02-18  
-**维护者**：AI Knowledge Base Team  
-**许可**：MIT  
+**文档版本**: 2.0（重写版本）  
+**适用版本**: GT New Horizons 2.8+  
+**最后更新**: 2026-02-18  
+**维护者**: AI Knowledge Base Team  
 
-**贡献**：欢迎提交改进建议和错误报告到知识库仓库。
+**重要说明**:
+- ⚠️ 本文档不包含源代码实现
+- ⚠️ 所有功能描述基于游戏内观察和社区文档
+- ⚠️ 具体实现细节请查阅GT5-Unofficial源代码
+- ⚠️ 某些细节（如确切的类名、方法名）可能与实际源码不同
 
-**致谢**：感谢 GTNewHorizons 团队开发和维护 GT5-Unofficial 模组，以及 GTNH 社区提供的详细文档和支持。
+**用途**:
+- 为玩家提供功能说明和使用指南
+- 为AI提供GT5U无线系统的概念性知识
+- 不应作为代码实现参考（请查阅实际源码）
 
----
-
-**注意事项**：
-1. 本文档**重点介绍玩家无线能量网络**（基于UUID的全局系统），这是GT5U的核心无线功能
-2. Tesla Tower 和 Laser 系统作为补充内容，它们是不同的能量传输机制
-3. 本文档基于 GTNH 2.8 版本，部分功能可能在新版本中有所变化
-4. 代码实现细节基于源码分析和社区讨论，实际实现请参考官方源代码
-5. 命令系统存在已知问题（如组队后无法公平分离），社区正在讨论改进方案
-
-**用途说明**：
-- 本文档为 AI 和开发者设计的技术参考文档
-- 详细记录了玩家无线网络的能量扣除、增加机制
-- 包含完整的命令系统说明（`/gt global_energy_display`, `/gt global_energy_join` 等）
-- 提供了核心类的代码实现示例（GlobalEnergyManager, MTEWirelessEnergy 等）
-- 适合用于模组开发、故障排查和系统理解
-- 可作为 GTNH 玩家的高级参考指南
+**致谢**: 感谢GTNewHorizons团队和GTNH社区
