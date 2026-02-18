@@ -1763,11 +1763,17 @@ public class GlobalEnergyWorldSavedData extends WorldSavedData {
 
 ---
 
-## 代码实现细节
+## 补充：Tesla Tower 与 Laser 系统
 
-### 核心类结构
+GT5-Unofficial 除了玩家无线能量网络外，还提供了两种辅助性的能量传输系统，它们与玩家网络可以配合使用。
 
-#### Tesla Tower 相关类
+### Tesla Tower 无线能量系统（辅助）
+
+Tesla Tower 是一个**区域性无线能量分配系统**，与玩家全局网络不同，它基于物理范围传输能量。
+
+#### 核心代码实现
+
+**Tesla Tower 相关类**：
 
 ```java
 // 主要类文件位置（推测）
@@ -2410,7 +2416,11 @@ Laser 被动损耗：
 - 视频教程：YouTube 搜索 "GTNH Tesla Tower" 或 "GTNH Laser"
 
 **代码位置**（推测）：
-- Tesla Tower：`gregtech/common/tileentities/multiblocks/electric/`
+- **玩家无线网络**：`gregtech/common/misc/GlobalEnergyManager.java`
+- **无线舱室**：`gregtech/common/tileentities/machines/MTEHatchWirelessMulti.java`
+- **命令处理**：`gregtech/common/misc/GT_Command.java`
+- **世界数据**：`gregtech/common/misc/GlobalEnergyWorldSavedData.java`
+- Tesla Tower：`gregtech/common/tileentities/multiblocks/electric/MTETeslaTower.java`
 - Laser 系统：`gregtech/common/tileentities/machines/MTEHatchEnergyLaser.java`
 - 覆盖物：`gregtech/common/covers/CoverTeslaCoil.java`
 - Active Transformer：`tectech/thing/metaTileEntity/multi/MTEActiveTransformer.java`
@@ -2432,13 +2442,16 @@ Laser 被动损耗：
 ---
 
 **注意事项**：
-1. 本文档基于 GTNH 2.8 版本，部分功能可能在新版本中有所变化
-2. 代码实现细节为推测，实际实现请参考源代码
-3. 所有配置建议基于一般场景，具体优化需根据实际情况调整
-4. Tesla Tower 的无限范围 Bug 可能在未来版本中修复
+1. 本文档**重点介绍玩家无线能量网络**（基于UUID的全局系统），这是GT5U的核心无线功能
+2. Tesla Tower 和 Laser 系统作为补充内容，它们是不同的能量传输机制
+3. 本文档基于 GTNH 2.8 版本，部分功能可能在新版本中有所变化
+4. 代码实现细节基于源码分析和社区讨论，实际实现请参考官方源代码
+5. 命令系统存在已知问题（如组队后无法公平分离），社区正在讨论改进方案
 
 **用途说明**：
 - 本文档为 AI 和开发者设计的技术参考文档
-- 包含详细的机制说明和代码实现细节
-- 适合用于模组开发、故障排查和性能优化
+- 详细记录了玩家无线网络的能量扣除、增加机制
+- 包含完整的命令系统说明（`/gt global_energy_display`, `/gt global_energy_join` 等）
+- 提供了核心类的代码实现示例（GlobalEnergyManager, MTEWirelessEnergy 等）
+- 适合用于模组开发、故障排查和系统理解
 - 可作为 GTNH 玩家的高级参考指南
