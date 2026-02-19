@@ -731,34 +731,46 @@ public int getEfficiency() {
 **配方图**：`GTPPRecipeMaps.rtgFuels`  
 **燃料**：RTG 颗粒（Am-241、Pu-238、Po-210、Sr-90）
 
-**特殊机制**：RTG 燃料以**游戏内天数**计量，而非消耗流体。电压由当前燃料的 `mEUt` 字段决定（非固定 tier）：
+**工作方式**：RTG 燃料颗粒一次性放入后即被消耗，其携带的全部 EU 一次性写入发电机内部缓存，
+再由 `maxEUOutput()` 以固定电压慢慢向外输出。电压由燃料配方的 `mEUt` 字段决定（非固定 tier）。
 
 ```java
-// MTERTGenerator.java:57
-// 燃料总 tick = MC天数 × 20 × 86400（秒/天）× 每天刻数
+// MTERTGenerator.java:49-51
+// 注：公式使用 20（tick/秒）× 86400（秒/真实日），即按真实世界天换算 tick 数
+// mDayTick < 24000 则跟踪游戏内天（1 MC日 = 24000 tick），两者单位不同
+// （源码注释 "// Generates fuel value based on MC days"，但公式实为真实日刻度）
 public static int convertDaysToTicks(float days) {
     return MathUtils.roundToClosestInt(20 * 86400 * days);
 }
 
-// :195-230（getFuelValue 核心）
+// :323-329（getFuelValue 核心）
 @Override
 public int getFuelValue(ItemStack aStack) {
     GTRecipe tFuel = getRecipeMap().findRecipeQuery().items(aStack).find();
     if (tFuel != null) {
-        this.mCurrentRecipe = tFuel;
-        int voltage = tFuel.mEUt;     // 从配方读取电压
-        this.mVoltage = voltage;      // 动态设置输出电压
+        int voltage = tFuel.mEUt;                           // 从配方读取输出电压
+        this.mVoltage = voltage;                             // 动态设置输出电压
         this.mTicksToBurnFor = getTotalEUGenerated(convertDaysToTicks(tFuel.mSpecialValue), voltage);
-        return (int)(mTicksToBurnFor * getEfficiency() / 100L);
+        this.mDaysRemaining = MathUtils.roundToClosestInt(mTicksToBurnFor / 20 / 60 / 3); // 剩余天数计数器
+        return (int)(mTicksToBurnFor * getEfficiency() / 100L); // 返回值 = 一次性写入缓存的总 EU
     }
 }
 
-// 输出电压由燃料配方决定（动态）
+// 输出电压由燃料配方决定（动态），而非固定 tier
 @Override
 public long maxEUOutput() {
     return (getBaseMetaTileEntity().isAllowedToWork()) ? this.mVoltage : 0L;
 }
 ```
+
+**RTG 燃料颗粒参数**（来源：`MetaGeneratedGregtechItems.java:329-363`）：
+
+| 颗粒 | `mSpecialValue` | 电压（`mEUt`） |
+|------|----------------|-------------|
+| Pu-238 RTG Pellet | 87.7 | MV (512 EU/t) |
+| Sr-90 RTG Pellet | 28.8 | LV (32 EU/t) |
+| Po-210 RTG Pellet | 1 | HV (2048 EU/t) |
+| Am-241 RTG Pellet | 216 | LV/2 (16 EU/t) |
 
 **输出面**：两侧面（左右），不包括前后面和顶底面：
 ```java
