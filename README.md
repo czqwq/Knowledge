@@ -4,22 +4,40 @@
 
 ## 📚 文档索引
 
-### 核心文档（13个文件，10,475行）
+### 核心文档（22个文件，17,632行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
 | **[GT5U_Readme.md](./GT5U_Readme.md)** | 2,310 | GT5-Unofficial全接口列表（228个） | 接口查询 |
 | **[Useful_Readme.md](./Useful_Readme.md)** | 1,798 | 可重用代码、工具类、设计模式 | 代码参考 |
-| **[Registry_README.md](./Registry_README.md)** | 440 | GT5U注册系统完整API文档 | 注册系统 |
-| **[Item.md](./Item.md)** | 347 | GT5U物品列表（2716个ItemList枚举） | 物品查询 |
-| **[Block.md](./Block.md)** | 258 | GT5U方块列表（202个方块枚举） | 方块查询 |
-| **[Liquid.md](./Liquid.md)** | 327 | GT5U流体列表（Materials流体系统） | 流体查询 |
-| **[Wireless_Network_README.md](./Wireless_Network_README.md)** | 495 | GT5U无线能量系统使用指南 | 无线能量功能 |
-| **[Wireless_Network_SOURCE_CODE.md](./Wireless_Network_SOURCE_CODE.md)** | 442 | GT5U无线能量网络真实源代码 | 源码参考 |
 | **[AE_README.md](./AE_README.md)** | 942 | AE2架构与286个接口 | AE2集成 |
 | **[PrivateMods_Readme.md](./PrivateMods_Readme.md)** | 660 | 第三方模组201个接口 | 模组扩展 |
 | **[Core_Infrastructure_README.md](./Core_Infrastructure_README.md)** | 990 | 核心基础设施198个接口+696个Mixin | 基础设施 |
 | **[GTNH_Repos_Index.md](./GTNH_Repos_Index.md)** | 363 | 300+仓库索引与统计 | 导航索引 |
+| **[Wireless_Network_README.md](./Wireless_Network_README.md)** | 495 | GT5U无线能量系统使用指南 | 无线能量功能 |
+| **[Wireless_Network_SOURCE_CODE.md](./Wireless_Network_SOURCE_CODE.md)** | 442 | GT5U无线能量网络真实源代码 | 源码参考 |
+
+### GT5U多模块注册系统文档（9个文件，7,157行）⭐ NEW
+
+| 文档 | 行数 | 物品数 | 注册方式 |
+|------|------|--------|---------|
+| **[Registry_Multi_Module_README.md](./Registry_Multi_Module_README.md)** | 373 | - | 多模块总览 |
+| **[GregTech_Item.md](./GregTech_Item.md)** | 7,157 | 2,745 | 枚举 (ItemList) |
+| **[GTPlusPlus_Item.md](./GTPlusPlus_Item.md)** | 1,352 | 651 | 枚举 (GregtechItemList) |
+| **[TecTech_Item.md](./TecTech_Item.md)** | 240 | 101 | 枚举 (CustomItemList) |
+| **[Kubatech_Item.md](./Kubatech_Item.md)** | 148 | 56 | 枚举 (ItemList) |
+| **[GGFab_Item.md](./GGFab_Item.md)** | 76 | 18 | 枚举 (GGItemList) |
+| **[BartWorks_Item.md](./BartWorks_Item.md)** | 238 | 12+ | 静态数组 + 方法 |
+| **[GoodGenerator_Item.md](./GoodGenerator_Item.md)** | 221 | 60 | 静态字段 |
+| **[Registry_README.md](./Registry_README.md)** | 440 | - | 单模块（已过时） |
+
+### 旧版单模块文档（保留作参考）
+
+| 文档 | 行数 | 内容 | 说明 |
+|------|------|------|------|
+| **[Item.md](./Item.md)** | 347 | 仅GregTech物品列表 | 被GregTech_Item.md替代 |
+| **[Block.md](./Block.md)** | 258 | 仅GregTech方块列表 | 被Registry_Multi_Module覆盖 |
+| **[Liquid.md](./Liquid.md)** | 327 | 仅GregTech流体列表 | 被Registry_Multi_Module覆盖 |
 | **README.md** | 3 | 本文档 | 快速入口 |
 
 ---
@@ -42,12 +60,14 @@
 - ✅ **NH-Utilities**: 14个接口
 - ✅ **123Technology**: 3个接口
 
-**总计**: 14个仓库，999+接口，696个Mixin
+**总计**: 14个仓库，999+接口，696个Mixin，3,643+物品
 
 ### 内容类型
 - 📋 接口列表：999+个接口，含包路径、功能描述
 - 🔧 工具类库：160+工具类、Helper、Builder
 - 🏗️ 设计模式：12+种模式实现与示例
+- 📦 物品注册：3,643+个物品，3种注册系统（枚举/数组/静态字段）
+- 🎯 多模块支持：8个GT5U子模块完整文档
 - 🎨 架构图：5个系统架构图解
 - 💻 代码示例：60+实战代码示例
 - 🔍 Mixin分析：696个Mixin的详细用途
@@ -87,6 +107,34 @@
 3. 能量扣除机制 → Wireless_Network_SOURCE_CODE.md #CoverEnergyWireless
 4. 命令使用 → Wireless_Network_README.md #命令系统
 ```
+
+### 场景5: 查找物品、方块、流体注册方式 ⭐ NEW
+```
+1. 注册系统总览 → Registry_Multi_Module_README.md #GT5U模块结构
+2. GregTech物品 (2745个) → GregTech_Item.md
+3. GT++物品 (651个) → GTPlusPlus_Item.md
+4. TecTech物品 (101个) → TecTech_Item.md
+5. BartWorks生物物品 → BartWorks_Item.md #静态数组方式
+6. GoodGenerator物品 → GoodGenerator_Item.md #静态字段方式
+7. 矿物词典使用 → Registry_Multi_Module_README.md #GTOreDictUnificator
+8. 配方注册示例 → Registry_Multi_Module_README.md #配方注册
+```
+
+### 场景6: 了解不同模块的物品获取方式 ⭐ NEW
+```
+# 枚举方式 (大部分模块)
+ItemStack item = ItemList.Machine_LV.get(1);                    // GregTech
+ItemStack item = GregtechItemList.Industrial_Centrifuge.get(1); // GT++
+ItemStack item = CustomItemList.eM_energyTunnel1_IV.get(1);     // TecTech
+
+# 静态数组方式 (BartWorks)
+ItemStack module = BioItemList.mBioLabParts[0];
+ItemStack dish = BioItemList.getPetriDish(culture);
+
+# 静态字段方式 (GoodGenerator)
+ItemStack plate = new ItemStack(Loaders.radiationProtectionPlate);
+```
+
 
 ---
 
