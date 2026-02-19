@@ -4,7 +4,7 @@
 
 ## 📚 文档索引
 
-### 核心文档（25个文件，19,940行）
+### 核心文档（26个文件，20,241行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
@@ -19,6 +19,7 @@
 | **[TRANSLATION_SYSTEM_README.md](./TRANSLATION_SYSTEM_README.md)** | 241 | 翻译系统说明（10,267条翻译） | 中文名映射 |
 | **[GT5U_Translation_Mapping.md](./GT5U_Translation_Mapping.md)** | 181 | 4,621条中文翻译（简化版） | 快速翻译查询 |
 | **[GT5U_Translation_Mapping_Enhanced.md](./GT5U_Translation_Mapping_Enhanced.md)** | 1,886 | 4,621条中文翻译（完整版） | 完整翻译指南 |
+| **[TRANSLATION_MAPPING_COMPLETION_REPORT.md](./TRANSLATION_MAPPING_COMPLETION_REPORT.md)** | 301 | 翻译映射任务完成报告 | 任务总结 |
 
 ### GT5U多模块注册系统文档（9个文件，7,157行）⭐ NEW
 
