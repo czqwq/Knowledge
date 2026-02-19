@@ -4,7 +4,7 @@
 
 ## 📚 文档索引
 
-### 核心文档（22个文件，17,632行）
+### 核心文档（23个文件，17,873行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
@@ -16,6 +16,7 @@
 | **[GTNH_Repos_Index.md](./GTNH_Repos_Index.md)** | 363 | 300+仓库索引与统计 | 导航索引 |
 | **[Wireless_Network_README.md](./Wireless_Network_README.md)** | 495 | GT5U无线能量系统使用指南 | 无线能量功能 |
 | **[Wireless_Network_SOURCE_CODE.md](./Wireless_Network_SOURCE_CODE.md)** | 442 | GT5U无线能量网络真实源代码 | 源码参考 |
+| **[TRANSLATION_SYSTEM_README.md](./TRANSLATION_SYSTEM_README.md)** | 241 | 翻译系统说明（10,267条翻译） | 中文名映射 |
 
 ### GT5U多模块注册系统文档（9个文件，7,157行）⭐ NEW
 
@@ -135,6 +136,17 @@ ItemStack dish = BioItemList.getPetriDish(culture);
 ItemStack plate = new ItemStack(Loaders.radiationProtectionPlate);
 ```
 
+### 场景7: 查找物品/方块的中文名 ⭐ NEW
+```
+1. 了解翻译系统 → TRANSLATION_SYSTEM_README.md
+2. Translation-of-GTNH数据:
+   - GregTech: 3,590条翻译
+   - GT++: 3,807条翻译
+   - TecTech: 1,854条翻译
+   - 其他模块: 2,016条翻译
+3. 映射挑战 → TRANSLATION_SYSTEM_README.md #映射问题
+4. 验证翻译真实性 → TRANSLATION_SYSTEM_README.md #验证方法
+```
 
 ---
 
