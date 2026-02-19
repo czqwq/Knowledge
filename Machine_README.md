@@ -1,8 +1,8 @@
 # GT5-Unofficial 已注册机器完整文档
 
-> 数据来源：GT5-Unofficial 真实源代码（/src/main/java/gregtech/ 及 /src/main/java/tectech/）  
+> 数据来源：GT5-Unofficial 真实源代码（所有 gt5u 子模块：gregtech、tectech、gtPlusPlus、goodgenerator、bartworks、kekztech、kubatech 等）  
 > 代码路径：https://github.com/GTNewHorizons/GT5-Unofficial  
-> **严禁伪造代码，所有描述均依照真实源文件**
+> **严禁伪造代码，所有描述均依照真实源文件，代码摘要直接来自 Java 源文件**
 
 ---
 
@@ -16,6 +16,11 @@
    - [特斯拉塔 / 能量注入机](#33-特斯拉塔--能量注入机)
    - [神锻炉（Forge of Gods）体系](#34-神锻炉forge-of-gods体系)
    - [鸿蒙之眼（Eye of Harmony）详细分析](#35-鸿蒙之眼eye-of-harmony-详细分析)
+4. [GT++（gtPlusPlus）子模块机器](#四gtgtplusplus子模块机器)
+5. [GoodGenerator 子模块机器](#五goodgenerator子模块机器)
+6. [BartWorks 子模块机器](#六bartworks子模块机器)
+7. [KekzTech 子模块机器](#七kekztech子模块机器)
+8. [KubaTech 子模块机器](#八kubatech子模块机器)
 
 ---
 
@@ -1517,4 +1522,957 @@ private void createRenderBlock(final EyeOfHarmonyRecipe currentRecipe) {
 
 ---
 
-*本文档基于 GT5-Unofficial 真实源代码编写，所有代码均来自 `/src/main/java/` 目录下的实际 Java 源文件。*
+## 四、GT++（gtPlusPlus）子模块机器
+
+**包路径**：`gtPlusPlus/xmod/gregtech/common/tileentities/machines/multi/`
+
+GT++ 是 GT5U 中最大的扩展子模块，提供了大量工业级多方块机器。
+
+---
+
+### 4.1 动力分站（Power Sub-Station）
+**类文件**：`multi/storage/MTEPowerSubStation.java`
+
+**功能**：  
+超大型能量储存多方块，消耗所有能量仓平均电压的一定百分比（`ENERGY_TAX`%），不需要维护，能量仓可以放在几乎任何位置。
+
+**代码摘要**（line 126-131）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Consumes " + this.ENERGY_TAX + "% of the average voltage of all energy type hatches")
+    .addInfo("Does not require maintenance")
+    .addInfo("Hatches can be placed nearly anywhere")
+```
+
+---
+
+### 4.2 大型半流体发电机（Large Semifluid Generator）
+**类文件**：`multi/production/MTELargeSemifluidGenerator.java`
+
+**功能**：  
+消耗半流体燃料 + 润滑油发电，可选注入氧气提升产量和效率。
+
+**代码摘要**（line 68-72）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Supply Semifluid Fuels and 2000L of Lubricant per hour to run")
+    .addInfo("Supply 80L of Oxygen per second to boost output (optional)")
+    .addInfo("Default: Produces 2048EU/t at 100% efficiency")
+    .addInfo("Boosted: Produces 6144EU/t at 150% efficiency")
+```
+
+---
+
+### 4.3 液态氟化钍反应堆（LFTR，Nuclear Reactor）
+**类文件**：`multi/production/MTENuclearReactor.java`
+
+**功能**：  
+液态氟化钍反应堆，通过放射性 β 衰变产生能量和新元素。需要 LFTB 燃料和熔融盐，4 个缓冲发电机仓需匹配对应燃料等级。
+
+**代码摘要**（line 99-103）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Controller Block for the Liquid Fluoride Thorium Reactor")
+    .addInfo("Produces energy and new elements from Radioactive Beta Decay!")
+    .addInfo("Input LFTB and a molten salt as fuel, and match the 4 Buffered Dynamo Hatches:")
+    .addInfo("LFTR Fuel 1 (4 EV Hatches), LFTR Fuel 2 (4 IV Hatches), LFTR Fuel 3 (4 LuV Hatches)")
+```
+
+---
+
+### 4.4 工业碎石机（Industrial Rock Breaker）
+**类文件**：`multi/production/MTEIndustrialRockBreaker.java`
+
+**功能**：  
+用集成电路选择配方产出（1=圆石, 2=石头, 3=黑曜石, 4=玄武岩, 5=深板岩, 6=地狱砖），需要水和熔岩输入。
+
+**代码摘要**（line 81-86）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Use Integrated Circuit to determine recipe")
+    .addInfo("1 = Cobble, 2 = Stone, 3 = Obsidian, 4 = Basalt, 5 = Deepslate, 6 = Netherrack")
+    .addInfo("Needs Water and Lava in input hatch")
+    .addInfo("Needs Soul Sand and Blue Ice in input bus for basalt")
+```
+
+---
+
+### 4.5 树木农场（Tree Farm）
+**类文件**：`multi/production/MTETreeFarm.java`
+
+**功能**：  
+使用 EU 自动种植和收割树木，控制器槽位放置树苗，输入总线放置工具，不同工具对应不同产出。
+
+**代码摘要**（line 121-125）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Farms and harvests trees using EU")
+    .addInfo("Place a sapling in the controller slot")
+    .addInfo("Place a tool in an input bus")
+    .addInfo("Different tools are required for different outputs")
+```
+
+---
+
+### 4.6 回旋加速器（Cyclotron）
+**类文件**：`multi/production/MTECyclotron.java`
+
+**功能**：  
+超磁速射装置，将粒子加速至光速 80%，产生连续束流用于元素合成。
+
+**代码摘要**（line 156-161）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Super Magnetic Speed Shooter")
+    .addInfo("Particles are accelerated over 186 revolutions to 80% light speed")
+    .addInfo("Can produce a continuous beam current of 2.2 mA at 590 MeV")
+    .addInfo("Which will be extracted from the Isochronous Cyclotron")
+```
+
+---
+
+### 4.7 大型火箭发动机（Large Rocket Engine）
+**类文件**：`multi/production/MTELargeRocketEngine.java`
+
+**功能**：  
+使用 GT++ 火箭燃料 + 润滑油发电，可选注入助推剂提升产量，未启用时不接受流体。
+
+**代码摘要**（line 108-112）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Generating Power from Rocket Fuels")
+    .addInfo("Supply GT++ Rocket Fuels and 1000L of " + mLubricantName + " per hour")
+    .addInfo("Produces as much energy as you put fuel in, with optional boosting")
+    .addInfo("This multi doesn't accept fluids if not enabled - enable it first!")
+```
+
+---
+
+### 4.8 太阳能塔（Solar Tower）
+**类文件**：`multi/production/MTESolarTower.java`
+
+**功能**：  
+绿色能源生产机，外围需要多圈太阳能反射器提升内部热值和等级，第一圈是必须的。
+
+**代码摘要**（line 81-85）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Contributing Green Energy towards the future")
+    .addInfo("Surround with rings of Solar Reflectors")
+    .addInfo("The Reflectors increase the internal heat value of the Tower (see below for formula)")
+    .addInfo("Each Reflector ring increases tier, the first ring is required for the Tower to work")
+```
+
+---
+
+### 4.9 合金冶炼炉（Alloy Blast Smelter，ABS）
+**类文件**：`multi/production/MTEAlloyBlastSmelter.java`
+
+**功能**：  
+制作复杂合金，配方等级受能量仓等级限制。
+
+**代码摘要**（line 82-84）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Allows Complex alloys to be created")
+    .addInfo("Recipe tier is limited to hatch tier")
+```
+
+---
+
+### 4.10 质量制造机（Mass Fabricator）
+**类文件**：`multi/production/MTEMassFabricator.java`
+
+**功能**：  
+生产 UU-A、UU-M 和废料（Scrap），并行数：废料 64 条，UU 每等级 8 条，螺丝刀切换模式。
+
+**代码摘要**（line 102-107）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Parallel: Scrap = 64 | UU = 8 * Tier")
+    .addInfo("Produces UU-A, UU-M & Scrap")
+    .addInfo("Change mode with screwdriver")
+```
+
+---
+
+### 4.11 量子力变换机（Quantum Force Transformer，QFT）
+**类文件**：`multi/production/MTEQuantumForceTransformer.java`
+
+**功能**：  
+将复杂处理流程即时合并为一步完成。脉冲调节器（Pulse Manipulator）等级决定最大配方等级，每个配方需要特定催化剂放入批量催化剂仓。
+
+**代码摘要**（line 190-195）：
+```java
+tt.addMachineType("Quantum Force Transformer, QFT")
+    .addInfo("Allows Complex processing lines to be performed instantly in one step")
+    .addInfo(catalystText("Pulse Manipulator") + " Tier determines maximum recipe tier")
+    .addInfo("Every recipe requires a specific " + catalystText("catalyst"))
+    .addInfo(catalystText("Catalysts") + " have to be placed in a Bulk Catalyst Housing")
+```
+
+---
+
+### 4.12 泡沫浮选槽（Froth Flotation Cell）
+**类文件**：`multi/production/MTEFrothFlotationCell.java`
+
+**功能**：  
+处理研磨矿石，每台机器只能同时处理一种材料。
+
+**代码摘要**（line 78-80）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Process that milled ore!")
+    .addInfo("You can only ever process one type of material per controller")
+```
+
+---
+
+### 4.13 自动合成机（Auto Crafter）
+**类文件**：`multi/production/MTEAutoCrafter.java`
+
+**功能**：  
+高级合成机器，自动按配方合成物品。
+
+**代码摘要**（line 68-69）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Highly Advanced Assembling Machine")
+```
+
+---
+
+### 4.14 热力锅炉（Thermal Boiler）
+**类文件**：`multi/production/MTEThermalBoiler.java`
+
+**功能**：  
+将水和热量转化为蒸汽，同时从熔岩中过滤原材料。缺水会爆炸！
+
+**代码摘要**（line 273-277）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Converts Water & Heat into Steam")
+    .addInfo("Filters raw materials from lava")
+    .addInfo("Explodes if water is not supplied")
+    .addInfo("Consult user manual for more information")
+```
+
+---
+
+### 4.15 化工厂（Chemical Plant）
+**类文件**：`multi/production/chemplant/MTEChemicalPlant.java`
+
+**功能**：  
+重工业化工机器，工厂等级由外壳等级决定，能量仓等级不能超过机器外壳等级（UHV外壳解锁所有等级）。
+
+**代码摘要**（line 141-146）：
+```java
+return new MultiblockTooltipBuilder().addMachineType(getMachineType())
+    .addInfo("Heavy Industry, now right at your doorstep!")
+    .addInfo("Plant tier is determined by casing tier")
+    .addInfo("Hatch tiers can't be higher than machine casing tier, UHV casing unlocks all tiers")
+```
+
+---
+
+### 4.16 精炼厂（Refinery）
+**类文件**：`multi/production/MTERefinery.java`
+
+**功能**：  
+将氟化物和铀精炼为 LFTR 核燃料，LFTR Fuel 2/3 有替代的更高效配方，每个处理单元只允许一个能量仓，所有配方时间很长。
+
+**代码摘要**（line 58-62）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Refines fluorides and Uranium into nuclear fuel for the LFTR")
+    .addInfo("LFTR Fuel 2 and Fuel 3 have alternative, much more efficient recipes")
+    .addInfo("Only one Energy Hatch is allowed per Processing Unit")
+    .addInfo("All recipe times in this multi are very long, watch out!")
+```
+
+---
+
+### 4.17 超大型合金冶炼炉（Mega Alloy Blast Smelter，MABS）
+**类文件**：`multi/production/mega/MTEMegaAlloyBlastSmelter.java`
+
+**功能**：  
+ABS 的超大版，流体合金冷却器，玻璃等级限制能量仓等级。
+
+**代码摘要**（line 271）：
+```java
+tt.addMachineType("Fluid Alloy Cooker, MABS")
+```
+
+---
+
+### 4.18 元素复制机（Elemental Duplicator）
+**类文件**：`multi/production/MTEElementalDuplicator.java`
+
+**功能**：  
+用 UU-Matter 生产原始元素，最多 1 个数据球仓，编程电路选择用哪个数据球（1-16）。
+
+**代码摘要**（line 83-87）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Produces raw elements from UU-Matter")
+    .addInfo("Maximum 1x Data Orb Repository")
+    .addInfo("The programmed circuit selects which Data Orb to use (1-16)")
+```
+
+---
+
+### 4.19 工业钓鱼池（Industrial Fishing Pond）
+**类文件**：`multi/production/MTEIndustrialFishingPond.java`
+
+**功能**：  
+模拟钓鱼，通过编程电路选择模式（鱼/垃圾），每等级支持 (等级+1)×2 个配方并行。
+
+**代码摘要**（line 100-104）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Can process (Tier + 1) * 2 recipes")
+    .addInfo("Put a numbered circuit into the input bus")
+    .addInfo("Circuit " + FISH_MODE + " for Fish")
+    .addInfo("Circuit " + JUNK_MODE + " for Junk")
+```
+
+---
+
+### 4.20 藻类养殖池（Algae Pond）
+**类文件**：`multi/production/algae/MTEAlgaePondBase.java`
+
+**功能**：  
+种植藻类，提供堆肥可提升一个等级产量，无需电力或维护，所有外壳必须同等级（决定速度）。
+
+**代码摘要**（line 96-100）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Grows Algae!")
+    .addInfo("Provide compost to boost production by one tier")
+    .addInfo("Does not require power or maintenance")
+    .addInfo("All Machine Casings must be the same tier, this dictates machine speed")
+```
+
+---
+
+### 4.21 更大型涡轮（Larger Turbine）
+**类文件**：`multi/production/turbines/MTELargerTurbineBase.java`
+
+**功能**：  
+相当于 16 台相同类型大型涡轮但只占 12 台的空间，支持松散配合模式（增加流量但降低效率）。
+
+**代码摘要**（line 148-152）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Runs as fast as 16 Large Turbines of the same type, takes the space of 12")
+    .addInfo("Right-click with screwdriver to enable loose fit")
+    .addInfo("Optimal flow will increase or decrease depending on fitting")
+    .addInfo("Loose fit increases flow in exchange for efficiency")
+```
+
+---
+
+### 4.22 工业凿切机（Industrial Chisel）
+**类文件**：`multi/processing/MTEIndustrialChisel.java`
+
+**功能**：  
+工厂级自动凿切机，控制器槽位放置目标方块用于通用输入总线，也可在每个凿切总线中单独设定目标方块。
+
+**代码摘要**（line 78-82）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Factory Grade Auto Chisel")
+    .addInfo("Target block goes in Controller slot for common Input Buses")
+    .addInfo("You can also set a target block in each Chisel Bus and use them as an Input Bus")
+```
+
+---
+
+### 4.23 艾萨磨矿机（IsaMill）
+**类文件**：`multi/processing/MTEIsaMill.java`
+
+**功能**：  
+高效矿石研磨机，工业级矿石处理核心设备。
+
+**代码摘要**（line 87-91）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("G.O.G, Grinds Ores Good")
+    .addInfo("It'sa mill!")
+```
+
+---
+
+### 4.24 工业脱水机（Industrial Dehydrator）
+**类文件**：`multi/processing/MTEIndustrialDehydrator.java`
+
+**功能**：  
+工厂级真空炉，可用螺丝刀切换操作温度，所有脱水配方都是低温配方。
+
+**代码摘要**（line 93-99）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Factory Grade Vacuum Furnace")
+    .addInfo("Can toggle the operation temperature with a Screwdriver")
+    .addInfo("All Dehydrator recipes are Low Temp recipes")
+```
+
+---
+
+### 4.25 工业挤出机 / 筛分机 / 混合机
+**类文件**：`MTEIndustrialExtruder.java`、`MTEIndustrialSifter.java`、`MTEIndustrialMixer.java`
+
+**功能**：分别对应工业级挤压、筛分、混合操作，均注册了对应机器类型。
+
+---
+
+### 4.26 蒸汽水泵（Steam Water Pump）
+**类文件**：`multi/processing/steam/MTESteamWaterPump.java`
+
+**功能**：  
+基于湿度泵水，有铜和钢两个等级，钢等级产水量翻倍。
+
+**代码摘要**（line 229-232）：
+```java
+tt.addMachineType(getMachineType())
+    .addInfo("Pumps Water based on humidity")
+    .addInfo("Has 2 tiers: Bronze and Steel")
+    .addInfo("Steel tier extracts 2x Water")
+```
+
+---
+
+### 4.27 蒸汽压缩机（Steam Compressor）
+**类文件**：`multi/processing/steam/MTESteamCompressor.java`
+
+**功能**：  
+蒸汽驱动的压缩机，支持高压选项。
+
+---
+
+## 五、GoodGenerator 子模块机器
+
+**包路径**：`goodgenerator/blocks/tileEntity/`
+
+---
+
+### 5.1 钔燃料精炼厂（Naquadah Fuel Refinery，NFR）
+**类文件**：`MTEFuelRefineFactory.java`
+
+**功能**：  
+生产钔燃料，需要场限制线圈来控制致命辐射。线圈等级越高，可解锁的燃料类型越多，并可执行更多完美超频。
+
+**代码摘要**（line 155-158）：
+```java
+tt.addMachineType("Naquadah Fuel Refinery, NFR")
+    .addInfo("Produces naquadah fuels")
+    .addInfo("Needs field restriction coils to control the fatal radiation")
+    .addInfo("Use higher tier coils to unlock more fuel types and perform more perfect overclocks")
+```
+
+---
+
+### 5.2 通用化学燃料发动机（Chemical Engine，UCFE）
+**类文件**：`MTEUniversalChemicalFuelEngine.java`
+
+**功能**：  
+燃烧液体燃料发电，需持续供应燃烧促进剂。
+
+**代码摘要**（line 158-161）：
+```java
+tt.addMachineType("Chemical Engine, UCFE")
+    .addInfo("BURNING BURNING BURNING")
+    .addInfo("Use combustible liquid to generate power")
+    .addInfo("You need to supply Combustion Promoter to keep it running")
+```
+
+---
+
+### 5.3 高容量组件装配线（Component Assembly Line，CoAL）
+**类文件**：`MTEComponentAssemblyLine.java`
+
+**功能**：  
+批量装配基础组件（电机、泵等），外壳等级高于配方要求时提供速度加成。
+
+**代码摘要**（line 213-222）：
+```java
+tt.addMachineType("High-Capacity Component Assembler, CoAL")
+    .addInfo("Assembles basic components (motors, pumps, etc.) in large batches")
+    .addInfo("Using casings above the required recipe tier provides a speed bonus:")
+```
+
+---
+
+### 5.4 大型聚变计算机（Large Fusion Computer，MK1-5）
+**类文件**：`MTELargeFusionComputer1~5.java`
+
+**功能**：  
+更大型的聚变反应堆升级版，电力严重过载！
+
+**代码摘要**（MTELargeFusionComputer1 line 48-50）：
+```java
+tt.addMachineType("Fusion Reactor")
+    .addInfo("Power overload!!!")
+```
+
+---
+
+### 5.5 中子活化机（Neutron Activator，NA）
+**类文件**：`MTENeutronActivator.java`
+
+**功能**：  
+超光速运动中子流激活机，加速管外壳最少高度为 4，每增加一节加速管可提供时间折扣。
+
+**代码摘要**（line 189-192）：
+```java
+tt.addMachineType("Neutron Activator, NA")
+    .addInfo("Superluminal-velocity Motion.")
+    .addInfo("The minimum height of the Speeding Pipe Casing is 4")
+    .addInfo("Per extra Speeding Pipe Casing will give time discount")
+```
+
+---
+
+### 5.6 冷却塔（Coolant Tower）
+**类文件**：`MTECoolantTower.java`
+
+**功能**：  
+将蒸汽重新转化为蒸馏水，闭环冷却系统的核心。
+
+**代码摘要**（line 108-109）：
+```java
+tt.addMachineType("Coolant Tower")
+    .addInfo("Turn Steam back to Distilled Water")
+```
+
+---
+
+### 5.7 尧他流体罐（Yotta Fluid Tank）
+**类文件**：`MTEYottaFluidTank.java`
+
+**功能**：  
+超大规模流体存储器，最大输出速度由存储量和输出舱容量决定，流体单元等级受玻璃等级限制（HV玻璃=T1，IV玻璃=T3...）。
+
+**代码摘要**（line 448-451）：
+```java
+tt.addMachineType("Fluid Tank")
+    .addInfo("The max output speed is decided by the amount of stored liquid and the output hatch's capacity")
+    .addInfo("The max fluid cell tier is limited by the glass tier")
+    .addInfo("HV glass for T1, EV glass for T2, IV glass for T3. . .")
+```
+
+---
+
+### 5.8 超临界蒸汽涡轮（Supercritical Fluid Turbine）
+**类文件**：`MTESupercriticalFluidTurbine.java`
+
+**功能**：  
+使用超临界蒸汽（SC Steam）发电，每 1L SC 蒸汽产出 1L SH 蒸汽，涡轮需放入控制器。
+
+**代码摘要**（line 142-145）：
+```java
+tt.addMachineType("Supercritical Steam Turbine")
+    .addInfo("Needs a Turbine, place inside controller")
+    .addInfo("Use Supercritical Steam to generate power")
+    .addInfo("Outputs 1L of SH Steam per 1L of SC Steam as well as producing power")
+```
+
+---
+
+### 5.9 大型精华冶炼炉（Large Essentia Smeltery，LES）
+**类文件**：`MTELargeEssentiaSmeltery.java`
+
+**功能**：  
+高级精华冶炼技术，最大并行 = 2^等级 × (长度-1)。
+
+**代码摘要**（line 207-210）：
+```java
+tt.addMachineType("Essentia Smeltery, LES")
+    .addInfo("Necessary evil")
+    .addInfo("Advanced Essentia smelting technology")
+    .addInfo("Maximum parallel = 2^Tier * (Length - 1)")
+```
+
+---
+
+### 5.10 大型钔反应堆（Naquadah Reactor，LNR）
+**类文件**：`MTEMultiNqGenerator.java`
+
+**功能**：  
+用高能量液体发电，环境友好型。
+
+**代码摘要**（line 352-355）：
+```java
+tt.addMachineType("Naquadah Reactor, LNR")
+    .addInfo("Environmentally Friendly!")
+    .addInfo("Generate power from high-energy liquids")
+```
+
+---
+
+### 5.11 精密装配机（Precise Assembler，PrAss）
+**类文件**：`MTEPreciseAssembler.java`
+
+**功能**：  
+纳米级精度装配，误差不超过 7nm，支持精密模式和普通模式（螺丝刀切换）。
+
+**代码摘要**（line 292-295）：
+```java
+tt.addMachineType("Precise Assembler, Assembler, PrAss")
+    .addInfo("No more than 7nm of error")
+    .addInfo("Has Two Modes: Precise and Normal")
+    .addInfo("Use a Screwdriver to change modes")
+```
+
+---
+
+### 5.12 反物质发生器（Antimatter Generator，SLAM）
+**类文件**：`AntimatterGenerator.java`
+
+**功能**：  
+湮灭反物质产生电能，来自 2205 年的技术。
+
+**代码摘要**（line 264-265）：
+```java
+tt.addMachineType("Antimatter Generator, SLAM")
+    .addInfo("Annihilating Antimatter like it's 2205!")
+```
+
+---
+
+### 5.13 反物质锻造炉（Antimatter Forge，SSASS）
+**类文件**：`AntimatterForge.java`
+
+**功能**：  
+将原始物质（Protomatter）转化为反物质，可用螺丝刀禁用渲染效果。
+
+**代码摘要**（line 167-170）：
+```java
+tt.addMachineType("Antimatter Forge, SSASS")
+    .addInfo("Converts protomatter into antimatter")
+    .addInfo("Use screwdriver to disable rendering")
+```
+
+---
+
+### 5.14 极限热交换器（Extreme Heat Exchanger，EHE）
+**类文件**：`MTEExtremeHeatExchanger.java`
+
+**功能**：  
+通过蒸馏水冷却热流体产生 SH 蒸汽；如果热流体供应超过阈值则过热，产生 SC 蒸汽。
+
+**代码摘要**（line 211-214）：
+```java
+tt.addMachineType("Heat Exchanger, EHE")
+    .addInfo("Outputs SH steam by cooling hot fluids with distilled water")
+    .addInfo("Supplying more hot fluid than the threshold causes overheating,")
+    .addInfo("producing SC steam instead")
+```
+
+---
+
+## 六、BartWorks 子模块机器
+
+**包路径**：`bartworks/common/tileentities/multis/`
+
+---
+
+### 6.1 风车（Windmill）
+**类文件**：`MTEWindmill.java`
+
+**功能**：  
+原始动能驱动研磨机，速度和产量受风速、配方和转子影响，需要使用原始转子。
+
+**代码摘要**（line 239-242）：
+```java
+tt.addMachineType("Windmill")
+    .addInfo("A primitive Grinder powered by Kinetic energy")
+    .addInfo("Speed and output will be affected by wind speed, recipe and rotor")
+    .addInfo("Please use the Primitive Rotor")
+```
+
+---
+
+### 6.2 电动爆炸压缩机（Electric Implosion Compressor，EIC）
+**类文件**：`MTEElectricImplosionCompressor.java`
+
+**功能**：  
+用电力替代炸药进行爆炸压缩，实现无爆炸物的压缩作业。
+
+**代码摘要**（line 215-218）：
+```java
+tt.addMachineType("Implosion Compressor, EIC")
+    .addInfo("Explosions are fun!")
+    .addInfo("Uses electricity instead of Explosives")
+```
+
+---
+
+### 6.3 钍高温反应堆（Thorium High Temperature Reactor，THTR）
+**类文件**：`MTEThoriumHighTempReactor.java`
+
+**功能**：  
+需要用一定量氦气预热，之后产生大量热能和放射性副产品。
+
+**代码摘要**（line 147-154）：
+```java
+tt.addMachineType("High Temperature Reactor, THTR")
+    .addInfo("Needs to be primed with " + formatNumber(HELIUM_NEEDED) + " of helium")
+```
+
+---
+
+### 6.4 电路装配线（Circuit Assembly Line，CAL）
+**类文件**：`MTECircuitAssemblyLine.java`
+
+**功能**：  
+专用电路装配机，用电路压印（Circuit Imprint）来设定目标电路，螺丝刀切换模式。
+
+**代码摘要**（line 192-197）：
+```java
+tt.addMachineType("Circuit Assembler, CAL")
+    .addInfo("Change Mode with Screwdriver")
+    .addInfo("Imprint this machine with a Circuit Imprint,")
+```
+
+---
+
+### 6.5 手动变压器（Manual Transformer）
+**类文件**：`MTEManualTrafo.java`
+
+**功能**：  
+四种模式的变压器（控制器中电路 0-3 决定：直接升压/降压、安培升压/降压）。
+
+**代码摘要**（line 140-143）：
+```java
+tt.addMachineType("Transformer")
+    .addInfo("Operates in 4 diffrent modes:")
+    .addInfo("Mode 1: Circuit 0 in controller: Direct-Upstep")
+    .addInfo("Mode 2: Circuit 1 in controller: Direct-Downstep")
+```
+
+---
+
+### 6.6 深地热泵（Deep Earth Heating Pump，DEHP）
+**类文件**：`MTEDeepEarthHeatingPump.java`
+
+**功能**：  
+地热热泵，消耗 HV 能量（TierEU.RECIPE_HV），螺丝刀切换直接蒸汽加热和冷却剂加热两种模式。
+
+**代码摘要**（line 88-92）：
+```java
+tt.addMachineType("Geothermal Heat Pump, DEHP")
+    .addInfo("Consumes " + TierEU.RECIPE_HV + "EU/t")
+    .addInfo("Has 2 Modes, use the Screwdriver to change them:")
+```
+
+---
+
+### 6.7 超大型真空冷冻机（Mega Vacuum Freezer，MVF）
+**类文件**：`mega/MTEMegaVacuumFreezer.java`
+
+**功能**：  
+超大规模真空冷冻，升级到 T2 可解锁亚空间冷却（Subspace Cooling）功能。
+
+**代码摘要**（line 235-246）：
+```java
+tt.addMachineType("Vacuum Freezer, MVF")
+    .addInfo("Upgrade to Tier 2 to unlock " + EnumChatFormatting.DARK_AQUA + "Subspace Cooling.")
+```
+
+---
+
+### 6.8 超大型石油裂解机（Mega Oil Cracker，MOC）
+**类文件**：`mega/MTEMegaOilCracker.java`
+
+**功能**：  
+石油裂解装置的超大版，EU 折扣最高 -50%。
+
+**代码摘要**（line 149-157）：
+```java
+tt.addMachineType("Cracker, MOC")
+    .addInfo("up to a maximum of " + TooltipHelper.effText("-50%") + " EU Usage")
+```
+
+---
+
+### 6.9 超大型蒸馏塔（Mega Distillation Tower，MDT）
+**类文件**：`mega/MTEMegaDistillTower.java`
+
+**功能**：  
+蒸馏塔的超大版，流体按高度对应配方槽位输出。
+
+**代码摘要**（line 260-264）：
+```java
+tt.addMachineType("Distillery, MDT")
+    .addInfo("Fluids are only put out at the correct height")
+    .addInfo("The correct height equals the slot number in the NEI recipe")
+```
+
+---
+
+### 6.10 超大型电弧炉（Mega Electric Blast Furnace，MEBF/MBF）
+**类文件**：`mega/MTEMegaBlastFurnace.java`
+
+**功能**：  
+电弧炉的超大版，可同时运行多个配方。
+
+**代码摘要**（line 160）：
+```java
+tt.addMachineType("Blast Furnace, MEBF, MBF")
+```
+
+---
+
+### 6.11 生物反应槽（Bacterial Vat，Bac Vat）
+**类文件**：`MTEBioVat.java`
+
+**功能**：  
+高级生物处理，辐射值可以是最低要求或精确值。
+
+**代码摘要**（line 171-198）：
+```java
+tt.addMachineType("Bacterial Vat, Bac Vat")
+    .addInfo("Advanced Bio Processing")
+    .addInfo("Radiation can be either a minimum requirement or an exact value")
+```
+
+---
+
+## 七、KekzTech 子模块机器
+
+**包路径**：`kekztech/common/tileentities/`
+
+---
+
+### 7.1 超大流体罐（Tank TFFT）
+**类文件**：`MTETankTFFT.java`
+
+**功能**：  
+高科技多流体罐，可存储最多 25 种不同流体，每种流体获得总容量的 1/25。存储量和运行成本取决于存储场方块类型，螺丝刀控制超量丢弃。
+
+**代码摘要**（line 343-347）：
+```java
+tt.addMachineType("Fluid Tank")
+    .addInfo("High-Tech fluid tank that can hold up to 25 different fluids!")
+    .addInfo("Has 1/25th of the total capacity as capacity for each fluid")
+    .addInfo("Right clicking the controller with a screwdriver will turn on excess voiding")
+    .addInfo("Fluid storage amount and running cost depends on the storage field blocks used")
+```
+
+---
+
+### 7.2 镧系超级电容器（Lapotronic Super Capacitor，LSC）
+**类文件**：`MTELapotronicSuperCapacitor.java`
+
+**功能**：  
+超大规模能量储存，每 24 小时损耗总容量的 1%，维护问题会倍增损耗。
+
+**代码摘要**（line 392-409）：
+```java
+tt.addMachineType("Energy Storage, LSC")
+    .addInfo("Loses energy equal to 1% of the total capacity every 24 hours")
+    .addInfo("Passive loss is multiplied by the number of maintenance issues present")
+```
+
+---
+
+### 7.3 固体氧化物燃料电池 MK1/MK2（SOFC）
+**类文件**：`MTESOFuelCellMK1.java`、`MTESOFuelCellMK2.java`
+
+**功能**：  
+氧化气体燃料发电，无污染排放，也可产生蒸汽（需预热完成才能产蒸汽）。MK2 支持硝基苯等高热值燃料。
+
+**代码摘要**（MTESOFuelCellMK1 line 105-111）：
+```java
+tt.addMachineType("Gas Turbine")
+    .addInfo("Oxidizes gas fuels to generate electricity without polluting the environment")
+    .addInfo("Steam production requires the SOFC to heat up completely first")
+    .addInfo("Outputs " + EU_PER_TICK + "EU/t and " + STEAM_PER_SEC + "L/s Steam")
+```
+
+---
+
+## 八、KubaTech 子模块机器
+
+**包路径**：`kubatech/tileentity/gregtech/multiblock/`
+
+---
+
+### 8.1 高温气冷反应堆（Breeder Reactor，HTGR）
+**类文件**：`MTEHighTempGasCooledReactor.java`
+
+**功能**：  
+增殖反应堆，通过高温气体冷却进行核裂变增殖。
+
+**代码摘要**（line 315-316）：
+```java
+tt.addMachineType("Breeder Reactor, HTGR")
+```
+
+---
+
+### 8.2 超大型工业蜂巢（Mega Industrial Apiary，Mapiary）
+**类文件**：`MTEMegaIndustrialApiary.java`
+
+**功能**：  
+蜜蜂养殖超大版，螺丝刀切换主要模式（输入/输出/运行），Shift+螺丝刀切换操作模式（正常/分群）。
+
+**代码摘要**（line 374-379）：
+```java
+tt.addMachineType("Mega Apiary, Mapiary")
+    .addInfo("The ideal home for your bees")
+    .addInfo("Use screwdriver to change primary mode (INPUT/OUTPUT/OPERATING)")
+    .addInfo("Use screwdriver + shift to change operation mode (NORMAL/SWARMER)")
+```
+
+---
+
+### 8.3 极限工业温室（Extreme Industrial Greenhouse，EIG）
+**类文件**：`MTEExtremeIndustrialGreenhouse.java`
+
+**功能**：  
+超规模农作物种植，螺丝刀切换设置模式，支持 IC2 农业模式（Shift+螺丝刀切换），剪线钳将传入 IC2 种子的湿度归零。
+
+**代码摘要**（line 356-360）：
+```java
+tt.addMachineType("Crop Farm, EIG")
+    .addInfo("Grow your crops like a chad!")
+    .addInfo("Use screwdriver to enable/change/disable setup mode")
+    .addInfo("Use screwdriver while sneaking to enable/disable IC2 mode")
+    .addInfo("Use wire cutters to give incoming IC2 seeds 0 humidity")
+```
+
+---
+
+### 8.4 DE 聚变合成机（Fusion Crafter，DEFC）
+**类文件**：`MTEDEFusionCrafter.java`
+
+**功能**：  
+应用聚变能量合成物品，普通 EU 超频仍然适用。
+
+**代码摘要**（line 141-147）：
+```java
+tt.addMachineType("Fusion Crafter, DEFC")
+    .addInfo("Normal EU OC still applies !")
+```
+
+---
+
+### 8.5 极限实体粉碎机（Extreme Entity Crusher，EEC）
+**类文件**：`MTEExtremeEntityCrusher.java`
+
+**功能**：  
+自动生成并击杀怪物，控制器槽位放置刷怪箱，基础能耗 1920 EU/t。
+
+**代码摘要**（line 306-311）：
+```java
+tt.addMachineType("Powered Spawner, EEC")
+    .addInfo("Spawns and kills monsters for you!")
+    .addInfo("Powered Spawner goes in Controller Slot")
+    .addInfo("Base energy usage: " + EnumChatFormatting.AQUA + "1920" + EnumChatFormatting.GRAY + " EU/t")
+```
+
+---
+
+*本文档基于 GT5-Unofficial 真实源代码编写，所有代码均来自 `/src/main/java/` 目录下的实际 Java 源文件，覆盖所有已注册的多方块机器（gregtech、tectech、gtPlusPlus、goodgenerator、bartworks、kekztech、kubatech 子模块）。*

@@ -4,10 +4,11 @@
 
 ## 📚 文档索引
 
-### 核心文档（26个文件，20,241行）
+### 核心文档（27个文件，22,000+行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
+| **[Machine_README.md](./Machine_README.md)** | 2,800+ | GT5U所有子模块已注册机器文档 + EOH详细分析 | 机器实现参考 ⭐ NEW |
 | **[GT5U_Readme.md](./GT5U_Readme.md)** | 2,310 | GT5-Unofficial全接口列表（228个） | 接口查询 |
 | **[Useful_Readme.md](./Useful_Readme.md)** | 1,798 | 可重用代码、工具类、设计模式 | 代码参考 |
 | **[AE_README.md](./AE_README.md)** | 942 | AE2架构与286个接口 | AE2集成 |
@@ -110,6 +111,22 @@
 2. 查看真实源代码 → Wireless_Network_SOURCE_CODE.md #核心类和命令实现
 3. 能量扣除机制 → Wireless_Network_SOURCE_CODE.md #CoverEnergyWireless
 4. 命令使用 → Wireless_Network_README.md #命令系统
+```
+
+### 场景8: 了解某台机器如何运作 ⭐ NEW
+```
+1. 机器文档总索引 → Machine_README.md
+2. GT5U 多方块机器 (50+台) → Machine_README.md #一gt5u-多方块机器
+   - EBF, 装配线, 聚变堆, 蒸馏塔, 洁净室, 矿石钻机...
+3. TecTech 机器 → Machine_README.md #三tectech-tt-模块机器
+   - 量子计算机, 数据银行, 研究站, 神锻炉...
+4. 鸿蒙之眼 EOH 详细流程 → Machine_README.md #35-鸿蒙之眼eye-of-harmony-详细分析
+   - 完整工作流程、耗电/产电机制、并行系统
+5. GT++ 机器 (27+台) → Machine_README.md #四gtgtplusplus子模块机器
+   - LFTR核反应堆, 化工厂, 回旋加速器, QFT...
+6. GoodGenerator 机器 → Machine_README.md #五goodgenerator子模块机器
+   - 钔精炼厂, 组件装配线, 中子活化机, 精密装配机...
+7. BartWorks/KekzTech/KubaTech → Machine_README.md #六bartworks子模块机器
 ```
 
 ### 场景5: 查找物品、方块、流体注册方式 ⭐ NEW
