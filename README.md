@@ -420,3 +420,28 @@ grep -r "配方系统" *.md
 **许可**: MIT  
 **版本**: 1.0  
 **最后更新**: 2026-02-12
+
+### 场景5: 查找物品、方块、流体注册方式
+```
+1. 了解注册系统 → Registry_README.md
+   - ItemList物品注册系统
+   - Materials流体注册系统
+   - GTOreDictUnificator矿物词典
+   - 配方中的物品获取方法
+
+2. 查找特定物品 → Item.md
+   - 2716个ItemList枚举
+   - 机器、工具、组件、方块分类
+   - 使用代码示例
+
+3. 查找方块 → Block.md
+   - 202个方块枚举
+   - 机器外壳、Hull、管道、框架
+   - meta值说明
+
+4. 查找流体 → Liquid.md
+   - Materials流体系统
+   - 普通流体、气体、熔融金属、等离子体
+   - getFluid/getGas/getMolten/getPlasma方法
+```
+
