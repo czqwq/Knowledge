@@ -4,7 +4,7 @@
 
 ## 📚 文档索引
 
-### 核心文档（23个文件，17,873行）
+### 核心文档（25个文件，19,940行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
@@ -17,6 +17,8 @@
 | **[Wireless_Network_README.md](./Wireless_Network_README.md)** | 495 | GT5U无线能量系统使用指南 | 无线能量功能 |
 | **[Wireless_Network_SOURCE_CODE.md](./Wireless_Network_SOURCE_CODE.md)** | 442 | GT5U无线能量网络真实源代码 | 源码参考 |
 | **[TRANSLATION_SYSTEM_README.md](./TRANSLATION_SYSTEM_README.md)** | 241 | 翻译系统说明（10,267条翻译） | 中文名映射 |
+| **[GT5U_Translation_Mapping.md](./GT5U_Translation_Mapping.md)** | 181 | 4,621条中文翻译（简化版） | 快速翻译查询 |
+| **[GT5U_Translation_Mapping_Enhanced.md](./GT5U_Translation_Mapping_Enhanced.md)** | 1,886 | 4,621条中文翻译（完整版） | 完整翻译指南 |
 
 ### GT5U多模块注册系统文档（9个文件，7,157行）⭐ NEW
 
@@ -126,6 +128,26 @@
 # 枚举方式 (大部分模块)
 ItemStack item = ItemList.Machine_LV.get(1);                    // GregTech
 ItemStack item = GregtechItemList.Industrial_Centrifuge.get(1); // GT++
+
+# 静态数组方式 (BartWorks)
+ItemStack module = BioItemList.mBioLabParts[0];                 // BartWorks
+
+# 静态字段方式 (GoodGenerator)
+ItemStack item = new ItemStack(Loaders.radiationProtectionPlate); // GoodGenerator
+```
+
+### 场景7: 查找物品/方块的中文名 ⭐ NEW
+```
+1. 快速查询 → GT5U_Translation_Mapping.md #按模块浏览前50条
+2. 完整映射 → GT5U_Translation_Mapping_Enhanced.md #4621条完整翻译
+3. 理解翻译模式 → GT5U_Translation_Mapping_Enhanced.md #翻译模式分析
+4. 查找特定翻译 → 在文档中搜索关键词
+
+示例:
+- kubaitem.tea.black_tea.name=红茶
+- BW_GlasBlocks.0.name=硼玻璃方块
+- gt.component.dust=%s粉
+```
 ItemStack item = CustomItemList.eM_energyTunnel1_IV.get(1);     // TecTech
 
 # 静态数组方式 (BartWorks)
