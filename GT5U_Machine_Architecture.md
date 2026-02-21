@@ -19,7 +19,7 @@
 10. [Hatch（仓口）系统](#十hatch仓口系统)
 11. [机器生命周期（Lifecycle）](#十一机器生命周期lifecycle)
 12. [ProcessingLogic（配方处理逻辑）](#十二processinglogic配方处理逻辑)
-13. [OverclockCalculator（超频计算器）](#十三overclockCalculator超频计算器)
+13. [OverclockCalculator（超频计算器）](#十三overclockCalculator超频计算器-1)
 14. [完整继承树](#十四完整继承树)
 
 ---
@@ -40,10 +40,11 @@ net.minecraft.tileentity.TileEntity
 
 **`BaseTileEntity`**  
 - 文件：`src/main/java/gregtech/api/metatileentity/BaseTileEntity.java`  
-- 第 74 行：
+- 第 74–75 行：
 ```java
 public abstract class BaseTileEntity extends TileEntity
-    implements IHasWorldObjectAndCoords, IIC2Enet, IGTEnet, ...
+    implements IHasWorldObjectAndCoords, IIC2Enet, IGTEnet,
+               ITileWithModularUI, IAddGregtechLogo, IGetGUITextureSet, IAddInventorySlots {
 ```
 提供坐标访问、IC2 能量网络接口等基础功能。
 
@@ -67,11 +68,12 @@ public abstract class CommonBaseMetaTileEntity extends CoverableTileEntity
 
 **`BaseMetaTileEntity`**（最终实体类）  
 - 文件：`src/main/java/gregtech/api/metatileentity/BaseMetaTileEntity.java`  
-- 第 96–97 行：
+- 第 96–98 行：
 ```java
 public class BaseMetaTileEntity extends CommonBaseMetaTileEntity
     implements IGregTechTileEntity, IActionHost, IGridProxyable,
-               IAlignmentProvider, IConstructableProvider, ...
+               IAlignmentProvider, IConstructableProvider,
+               IDebugableTileEntity, IGregtechWailaProvider, ICustomNameObject {
 ```
 - 持有字段 `mStoredEnergy`（long，内部 EU 储量）和 `mStoredSteam`（long，蒸汽储量）。  
 - 持有指向 `MetaTileEntity` 的引用，通过 `getMetaTileEntity()` / `setMetaTileEntity()` 访问。  
