@@ -1204,7 +1204,7 @@ protected CheckRecipeResult checkProcessing_EM() {
 
 **关键逻辑**：
 1. 控制器槽位中必须有**行星方块**（`BlockDimensionDisplay`，由 gtneioreplugin 提供）——不同星球对应不同配方
-2. 每 **60 tick（3 秒）** 才检查一次配方（`RECIPE_CHECK_INTERVAL = 3 * 20`），防卡顿
+2. `lagPreventer` 在每次进入 `checkProcessing_EM` 时自增，若小于 `RECIPE_CHECK_INTERVAL`（60）则立即重置为 0 并执行检查，因此实际上**每次调用**均会执行配方检查（防卡顿逻辑依赖外层框架 `shouldCheckRecipeThisTick` 而非此处）
 
 ---
 
@@ -1239,12 +1239,17 @@ for (ItemStack itemStack : mInputBusses.get(0).getRealInventory()) {
 ```
 
 - 星列阵制造机（`astralArrayFabricator`）被放入输入总线后消耗，提供并行能力
-- 并行数公式（line 1250-1254）：
+- 并行数公式（line 1250-1260）：
 ```java
-parallelExponent = (long) Math.floor(
-    Math.log(PARALLEL_FOR_FIRST_ASTRAL_ARRAY * Math.min(astralArrayAmount, ASTRAL_ARRAY_LIMIT))
-        / LOG_CONSTANT);
-parallelAmount = (long) GTUtility.powInt(2, parallelExponent);
+long parallelExponent = 1;
+if (astralArrayAmount != 0) {
+    parallelExponent = (long) Math.floor(
+        Math.log(PARALLEL_FOR_FIRST_ASTRAL_ARRAY * Math.min(astralArrayAmount, ASTRAL_ARRAY_LIMIT))
+            / LOG_CONSTANT);
+    parallelAmount = (long) GTUtility.powInt(2, parallelExponent);
+} else {
+    parallelAmount = 1;
+}
 ```
 其中：
 - `PARALLEL_FOR_FIRST_ASTRAL_ARRAY = 8`
@@ -1401,16 +1406,21 @@ successChance = recipeChanceCalculator();
 **pity 系统**（line 1428-1448）：
 ```java
 private void outputFailedChance() {
-    // ...
-    if (parallelAmount == 1) {
-        // Add chance to pity if previous recipe is equal to current one, else reset pity
-        if (previousRecipeChance == successChance) {
-            pityChance += (1 - successChance) * successChance;
-        } else {
-            pityChance = successChance;
+    long failedParallelAmount = parallelAmount - successfulParallelAmount;
+    if (failedParallelAmount > 0) {
+        // 2^Tier spacetime released upon recipe failure.
+        outputFluidToAENetwork(
+            Materials.SpaceTime.getMolten(1),
+            (long) ((successChance * MOLTEN_SPACETIME_PER_FAILURE_TIER
+                * GTUtility.powInt(SPACETIME_FAILURE_BASE, currentRecipeRocketTier + 1)) * failedParallelAmount));
+        if (parallelAmount == 1) {
+            // Add chance to pity if previous recipe is equal to current one, else reset pity
+            if (previousRecipeChance == successChance) {
+                pityChance += (1 - successChance) * successChance;
+            } else {
+                pityChance = successChance;
+            }
         }
-    }
-    // ...
     } else if (parallelAmount == 1) {
         // Recipe succeeded, reset pity
         pityChance = Double.MIN_VALUE;
@@ -1425,17 +1435,7 @@ private void outputFailedChance() {
 
 ### 失败处理：时空物质输出
 
-配方失败时输出熔融时空（Molten SpaceTime）（line 1428-1435）：
-```java
-private void outputFailedChance() {
-    long failedParallelAmount = parallelAmount - successfulParallelAmount;
-    if (failedParallelAmount > 0) {
-        // 2^Tier spacetime released upon recipe failure.
-        outputFluidToAENetwork(
-            Materials.SpaceTime.getMolten(1),
-            (long) ((successChance * MOLTEN_SPACETIME_PER_FAILURE_TIER
-                * GTUtility.powInt(SPACETIME_FAILURE_BASE, currentRecipeRocketTier + 1)) * failedParallelAmount));
-```
+配方失败时输出熔融时空（Molten SpaceTime）（详见上方 `outputFailedChance` 完整代码）：
 
 - `MOLTEN_SPACETIME_PER_FAILURE_TIER = 14_400`
 - `SPACETIME_FAILURE_BASE = 2`（即 2^(火箭等级+1) 倍量）
@@ -1470,7 +1470,7 @@ private void createRenderBlock(final EyeOfHarmonyRecipe currentRecipe) {
        └─ 每20tick(非运行时): drainFluidFromHatchesAndStoreInternally()
             └─ 存储 H₂、He、RawStarMatter 到内部 Map
 
-[每60tick] checkProcessing_EM()
+[checkProcessing_EM()（由外层框架按需调用，每次调用均执行检查）]
   ├─ 读取控制器槽位行星方块
   ├─ 查找配方 eyeOfHarmonyRecipeStorage.recipeLookUp(controllerStack)
   └─ processRecipe(currentRecipe)
@@ -1518,7 +1518,7 @@ private void createRenderBlock(final EyeOfHarmonyRecipe currentRecipe) {
 | `TOTAL_CASING_TIERS_WITH_POWER_PENALTY` | `8` | 计算产电惩罚的基准等级 |
 | `ASTRAL_ARRAY_LIMIT` | `8637` | 星列阵最大数量（对应 2^21 并行） |
 | `TICKS_BETWEEN_HATCH_DRAIN` | `20` | 每次从输入舱抽取流体的间隔 tick |
-| `RECIPE_CHECK_INTERVAL` | `60` (3×20) | 每次检查配方的间隔 tick |
+| `RECIPE_CHECK_INTERVAL` | `60` (3×20) | lagPreventer 上限（实际上每次调用均执行检查，防卡顿依赖外层框架） |
 
 ---
 

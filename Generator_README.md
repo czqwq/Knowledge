@@ -872,21 +872,23 @@ public CheckRecipeResult checkProcessing() {
 // 需要：GT++ 火箭燃料 + CO2 润滑 + 空气（防止过热）+ 液氢（可选 boost）
 @Override
 public CheckRecipeResult checkProcessing() {
+    int aircount = getAir(); // 实际方法名为 getAir()，而非 getAirAmount()
     int aAirToConsume = this.euProduction / 100;
-    if (getAirAmount() < aAirToConsume) return SimpleCheckRecipeResult.ofFailure("no_air");
+    if (aircount < aAirToConsume) return SimpleCheckRecipeResult.ofFailure("no_air");
 
-    for (FluidStack hatchFluid : tFluids) {
-        GTRecipe aFuel = GTPPRecipeMaps.rocketFuels.getBackend().findFuel(hatchFluid);
-        this.boostEu = consumeLOH(); // 消耗液氢
-        if (boostEu) {
-            this.fuelValue = aFuel.mSpecialValue * 3;
-            this.lEUt = GTValues.V[5] << 1; // ~65536 EU/t boost 模式
-        } else {
-            this.lEUt = GTValues.V[5] << 1; // 约 32768 EU/t
+    this.boostEu = consumeLOH(); // 消耗液氢（boost 决定燃料消耗量，不影响 lEUt）
+    for (final FluidStack hatchFluid1 : tFluids) {
+        for (final GTRecipe aFuel : getRecipeMap().getAllRecipes()) {
+            if (hatchFluid1.isFluidEqual(aFuel.mFluidInputs[0])) {
+                if (!consumeFuel(aFuel, hatchFluid1.amount)) continue;
+                this.fuelValue = aFuel.mSpecialValue * 3;
+                this.lEUt = ((this.mEfficiency < 2000) ? 0 : GTValues.V[5] << 1); // 16384 EU/t（V[5]=8192，<<1）
+                this.mEfficiencyIncrease = this.euProduction / 2000;
+                return CheckRecipeResultRegistry.GENERATING;
+            }
         }
-        this.mEfficiencyIncrease = this.euProduction / 2000;
-        return CheckRecipeResultRegistry.GENERATING;
     }
+    return CheckRecipeResultRegistry.NO_FUEL_FOUND;
 }
 
 // 消耗 CO2 作为润滑剂
