@@ -4,11 +4,12 @@
 
 ## 📚 文档索引
 
-### 核心文档（27个文件，22,000+行）
+### 核心文档（28个文件，22,000+行）
 
 | 文档 | 行数 | 内容 | 用途 |
 |------|------|------|------|
-| **[Machine_README.md](./Machine_README.md)** | 2,800+ | GT5U所有子模块已注册机器文档 + EOH详细分析 | 机器实现参考 ⭐ NEW |
+| **[GT5U_Mixin_README.md](./GT5U_Mixin_README.md)** | 600+ | GT5U Mixin系统完整指南：EarlyMixin/LateMixin/ASM注入/真实源码示例 | Mixin开发参考 ⭐ NEW |
+| **[Machine_README.md](./Machine_README.md)** | 2,800+ | GT5U所有子模块已注册机器文档 + EOH详细分析 | 机器实现参考 |
 | **[GT5U_Readme.md](./GT5U_Readme.md)** | 2,310 | GT5-Unofficial全接口列表（228个） | 接口查询 |
 | **[Useful_Readme.md](./Useful_Readme.md)** | 1,798 | 可重用代码、工具类、设计模式 | 代码参考 |
 | **[AE_README.md](./AE_README.md)** | 942 | AE2架构与286个接口 | AE2集成 |
@@ -111,6 +112,25 @@
 2. 查看真实源代码 → Wireless_Network_SOURCE_CODE.md #核心类和命令实现
 3. 能量扣除机制 → Wireless_Network_SOURCE_CODE.md #CoverEnergyWireless
 4. 命令使用 → Wireless_Network_README.md #命令系统
+```
+
+### 场景9: 学习 Mixin / ASM 字节码注入 ⭐ NEW
+```
+1. 完整指南入口 → GT5U_Mixin_README.md
+2. EarlyMixin 原理与代码 → GT5U_Mixin_README.md #三earlymixin--gtcoreplugin
+   - GTCorePlugin.java (IFMLLoadingPlugin + IEarlyMixinLoader)
+   - 仅能引用 Minecraft/Forge 原版类
+3. LateMixin 原理与代码 → GT5U_Mixin_README.md #四latemixin--latemixinplugin
+   - LateMixinPlugin.java (@LateMixin + ILateMixinLoader)
+   - 可引用 IC2/Railcraft/Thaumcraft 等 Mod 类
+4. 中央注册枚举 → GT5U_Mixin_README.md #五mixin-枚举注册中心
+   - MixinBuilder API: addCommonMixins/addClientMixins/setPhase/addRequiredMod
+5. 各注入注解详解（含真实代码）→ GT5U_Mixin_README.md #九注入注解详解
+   - @Inject / @Redirect / @ModifyArg / @ModifyReturnValue
+   - @WrapOperation / @WrapWithCondition / @Overwrite
+   - @Shadow / @Final / @Unique
+6. Accessor 接口模式 → GT5U_Mixin_README.md #十一accessor-接口模式
+7. 污染系统完整案例 → GT5U_Mixin_README.md #十三污染系统完整示例
 ```
 
 ### 场景8: 了解某台机器如何运作 ⭐ NEW
