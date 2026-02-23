@@ -518,8 +518,9 @@ grep -r "配方系统" *.md
 
 - **GTNH官网**: https://www.gtnewhorizons.com/
 - **GitHub组织**: https://github.com/GTNewHorizons
-- **Wiki**: https://gtnh.miraheze.org/
+- **英文Wiki**: https://gtnh.miraheze.org/
 - **Discord**: https://discord.gg/gtnh
+- **中文wiki**: https://gtnh.huijiwiki.com
 
 ---
 
