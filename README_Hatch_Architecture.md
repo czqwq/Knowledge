@@ -83,6 +83,8 @@ MetaTileEntity
 | `MTEHatchOutputBusME` | `gregtech/common/tileentities/machines/outputme/MTEHatchOutputBusME.java` |
 | `MTEHatchOutputME` | `gregtech/common/tileentities/machines/outputme/MTEHatchOutputME.java` |
 | `MTEHatchOutputMEBase` | `gregtech/common/tileentities/machines/outputme/base/MTEHatchOutputMEBase.java` |
+###
+注: MTEHatchOutputME,MTEHatchOutputBusME等ME舱室的基类存在旧版路径,旧版路径不存在outputme等文件夹嵌套,旧版路径为gregtech/common/tileentities/machines/MTEHatchOutputME.java,要根据gt5u的版本来判断旧还是新版gt5u
 
 ### MTEHatch 基类核心逻辑
 
