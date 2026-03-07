@@ -10,7 +10,7 @@
 
 ## 📋 说明
 
-本文档列出TecTech (Technically Magic)模块的所有ItemList枚举项。
+本文档列出TecTech (TEC TECHNOLOGY)模块的所有ItemList枚举项。
 
 ### 使用示例
 
