@@ -1,4 +1,4 @@
-# TecTech (Technically Magic) 物品列表
+# TecTech (TEC TECHNOLOGY) 物品列表
 
 **模块**: TecTech
 **总计**: 101 个物品
